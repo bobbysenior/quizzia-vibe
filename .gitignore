@@ -8,6 +8,4 @@ docker-compose.override.yml
 node_modules
 .next
 *.tsbuildinfo
-.commandcode
 supabase/.temp
-migrations
