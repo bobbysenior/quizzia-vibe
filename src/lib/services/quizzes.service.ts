@@ -1,6 +1,21 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Quiz, QuizWithCount, QuizStatus } from '@/lib/types';
 
+export interface QuizQuestion {
+  id: string;
+  question_text: string;
+  order_index: number;
+  choices: { id: string; choice_text: string; order_index: number }[];
+}
+
+export interface QuizAttemptPlay {
+  id: string;
+  quiz_id: string;
+  status: 'in_progress' | 'completed';
+  total_questions: number;
+  score: number | null;
+}
+
 export interface UserStats {
   completedCount: number;
   createdCount: number;
@@ -111,6 +126,124 @@ export async function listQuizzes(): Promise<Quiz[]> {
 
   if (error) throw new Error(error.message);
   return data;
+}
+
+// ---------------------------------------------------------------
+// Play functions
+// ---------------------------------------------------------------
+
+export async function getQuizQuestions(quizId: string): Promise<QuizQuestion[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('questions')
+    .select('id, question_text, order_index, choices(id, choice_text, order_index)')
+    .eq('quiz_id', quizId)
+    .order('order_index', { ascending: true })
+    .order('order_index', { referencedTable: 'choices', ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as QuizQuestion[];
+}
+
+export async function createQuizAttempt(
+  quizId: string,
+  totalQuestions: number
+): Promise<QuizAttemptPlay> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from('quiz_attempts')
+    .insert({
+      quiz_id: quizId,
+      user_id: user?.id ?? null,
+      status: 'in_progress',
+      total_questions: totalQuestions,
+    })
+    .select('id, quiz_id, status, total_questions, score')
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as QuizAttemptPlay;
+}
+
+export async function getExistingAttempt(attemptId: string): Promise<QuizAttemptPlay | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('quiz_attempts')
+    .select('id, quiz_id, status, total_questions, score')
+    .eq('id', attemptId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw new Error(error.message);
+  }
+  return data as QuizAttemptPlay;
+}
+
+export async function submitAnswer(
+  attemptId: string,
+  questionId: string,
+  choiceId: string
+): Promise<{ isCorrect: boolean; answeredQuestionIds: string[] }> {
+  const supabase = await createClient();
+
+  const { data: choice, error: choiceError } = await supabase
+    .from('choices')
+    .select('is_correct')
+    .eq('id', choiceId)
+    .single();
+
+  if (choiceError) throw new Error(choiceError.message);
+
+  const { error: insertError } = await supabase.from('user_answers').insert({
+    attempt_id: attemptId,
+    question_id: questionId,
+    selected_choice_id: choiceId,
+    is_correct: choice.is_correct,
+  });
+
+  if (insertError) throw new Error(insertError.message);
+
+  const { data: answers } = await supabase
+    .from('user_answers')
+    .select('question_id')
+    .eq('attempt_id', attemptId);
+
+  return {
+    isCorrect: choice.is_correct,
+    answeredQuestionIds: (answers ?? []).map((a) => a.question_id),
+  };
+}
+
+export async function completeAttempt(
+  attemptId: string
+): Promise<{ score: number; total: number }> {
+  const supabase = await createClient();
+
+  const { data: answers, error: countError } = await supabase
+    .from('user_answers')
+    .select('is_correct')
+    .eq('attempt_id', attemptId);
+
+  if (countError) throw new Error(countError.message);
+
+  const score = (answers ?? []).filter((a) => a.is_correct).length;
+  const total = (answers ?? []).length;
+
+  const { error: updateError } = await supabase
+    .from('quiz_attempts')
+    .update({ status: 'completed', score, completed_at: new Date().toISOString() })
+    .eq('id', attemptId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  return { score, total };
 }
 
 export async function getQuizById(id: string): Promise<QuizWithCount | null> {
