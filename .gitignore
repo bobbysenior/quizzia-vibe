@@ -1,11 +1,5 @@
-# .env
+volumes/db/data
+volumes/storage
 .env
-.env.local
-.env.*.local
-
-# Supabase volumes
-volumes/
-
-# Docker
-supabase/.branches/
-supabase/.temp/
+test.http
+docker-compose.override.yml
