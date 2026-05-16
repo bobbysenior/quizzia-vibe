@@ -1,95 +1,97 @@
-<div align="center">
+# Quizz App
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/supabase/supabase/3-self-hosted-deployment)
+Application de quizz générés par IA. Créez, partagez et répondez à des quizz sur n'importe quel thème.
 
-</div>
+## Stack
 
-# Self-Hosted Supabase with Docker
+- **Frontend** : Next.js 16, TypeScript, Tailwind CSS v4
+- **Backend** : Supabase (PostgreSQL 15, Auth, REST API)
+- **Infra** : Docker (Supabase self-hosted)
 
-This is the official Docker Compose setup for self-hosted Supabase. It provides a complete stack with all Supabase services running locally or on your infrastructure.
+## Prérequis
 
-## Getting Started
+- [Docker](https://docs.docker.com/get-docker/) et Docker Compose
+- [Node.js](https://nodejs.org/) ≥ 20
 
-Follow the detailed setup guide in our documentation: [Self-Hosting with Docker](https://supabase.com/docs/guides/self-hosting/docker)
+## Installation
 
-The guide covers:
-- Prerequisites (Git and Docker)
-- Initial setup and configuration
-- Securing your installation
-- Accessing services
-- Updating your instance
+```bash
+# 1. Cloner le projet
+git clone <repo-url>
+cd tp1_quizz
 
-## What's Included
+# 2. Configurer les variables d'environnement
+cp .env.example .env
+# Éditer .env pour définir des secrets forts (POSTGRES_PASSWORD, JWT_SECRET, etc.)
+# Générer des clés : ./utils/generate-keys.sh
 
-This Docker Compose configuration includes the following services:
+# 3. Démarrer Supabase (base de données, auth, API)
+docker compose up -d
+# Attendre que tous les conteneurs soient healthy (~30s)
 
-- **[Studio](https://github.com/supabase/supabase/tree/master/apps/studio)** - A dashboard for managing your self-hosted Supabase project
-- **[Kong](https://github.com/Kong/kong)** - Kong API gateway
-- **[Auth](https://github.com/supabase/auth)** - JWT-based authentication API for user sign-ups, logins, and session management
-- **[PostgREST](https://github.com/PostgREST/postgrest)** - Web server that turns your PostgreSQL database directly into a RESTful API
-- **[Realtime](https://github.com/supabase/realtime)** - Elixir server that listens to PostgreSQL database changes and broadcasts them over websockets
-- **[Storage](https://github.com/supabase/storage)** - RESTful API for managing files in S3, with Postgres handling permissions
-- **[imgproxy](https://github.com/imgproxy/imgproxy)** - Fast and secure image processing server
-- **[postgres-meta](https://github.com/supabase/postgres-meta)** - RESTful API for managing Postgres (fetch tables, add roles, run queries)
-- **[PostgreSQL](https://github.com/supabase/postgres)** - Object-relational database with over 30 years of active development
-- **[Edge Runtime](https://github.com/supabase/edge-runtime)** - Web server based on Deno runtime for running JavaScript, TypeScript, and WASM services
-- **[Logflare](https://github.com/Logflare/logflare)** - Log management and event analytics platform
-- **[Vector](https://github.com/vectordotdev/vector)** - High-performance observability data pipeline for logs
-- **[Supavisor](https://github.com/supabase/supavisor)** - Supabase's Postgres connection pooler
+# 4. Appliquer la migration initiale
+# La migration est dans supabase/migrations/
+# Via Supabase CLI :
+supabase db push --local
+# Ou manuellement via le Studio : http://localhost:8000 > SQL Editor
+
+# 5. Installer les dépendances frontend
+npm install
+
+# 6. Remplir la base de données (données de démo)
+npm run seed
+
+# 7. Démarrer l'application
+npm run dev
+```
+
+L'application est accessible sur [http://localhost:3000](http://localhost:3000).
+
+## Comptes de démo
+
+| Email | Mot de passe |
+|---|---|
+| `demo@quizz.app` | `demo123456` |
+
+## Commandes
+
+| Commande | Description |
+|---|---|
+| `npm run dev` | Lancer le serveur de développement |
+| `npm run build` | Build de production |
+| `npm run start` | Démarrer en production |
+| `npm run seed` | Remplir la base avec des données fictives |
+| `npm run lint` | Vérifier le code avec ESLint |
+
+## Services
+
+| Service | URL |
+|---|---|
+| App Next.js | http://localhost:3000 |
+| Supabase Studio | http://localhost:8000 |
+| Supabase API | http://localhost:8000 |
+
+## Structure
+
+```
+├── src/
+│   ├── app/              # Pages et routes Next.js (App Router)
+│   │   └── auth/         # Callback OAuth/email
+│   ├── lib/
+│   │   ├── auth/         # Server Actions (signUp, signIn, signOut)
+│   │   ├── services/     # Couche métier (quizzes.service)
+│   │   └── supabase/     # Clients Supabase (navigateur, serveur, proxy)
+│   └── proxy.ts          # Session refresh
+├── supabase/
+│   └── migrations/       # Migrations SQL
+├── scripts/
+│   └── seed.mjs          # Script de seeding
+├── docs/                 # Documentation
+└── PR/                   # Pull requests
+```
 
 ## Documentation
 
-- **[Self-Hosting with Docker](https://supabase.com/docs/guides/self-hosting/docker)** - Setup and configuration guides
-- **[CHANGELOG.md](./CHANGELOG.md)** - Track recent updates and changes to services
-- **[versions.md](./versions.md)** - Complete history of Docker image versions for rollback reference
-- **[Ask DeepWiki / Supabase](https://deepwiki.com/supabase/supabase/3-self-hosted-deployment)** - DeepWiki-generated description of self-hosted configuration
-
-## Updates
-
-To update your self-hosted Supabase instance:
-
-1. Review [CHANGELOG.md](./CHANGELOG.md) for breaking changes
-2. Check [versions.md](./versions.md) for new image versions
-3. Update `docker-compose.yml` if there are configuration changes
-4. Pull the latest images: `docker compose pull`
-5. Stop services: `docker compose down`
-6. Start services with new configuration: `docker compose up -d`
-
-**Note:** Consider to always backup your database before updating.
-
-## Community & Support
-
-For troubleshooting common issues, see:
-- [GitHub Discussions](https://github.com/orgs/supabase/discussions?discussions_q=is%3Aopen+label%3Aself-hosted) - Questions, feature requests, and workarounds
-- [GitHub Issues](https://github.com/supabase/supabase/issues?q=is%3Aissue%20state%3Aopen%20label%3Aself-hosted) - Known issues
-- [Documentation](https://supabase.com/docs/guides/self-hosting) - Setup and configuration guides
-
-Self-hosted Supabase is community-supported. Get help and connect with other users:
-
-- [Discord](https://discord.supabase.com) - Real-time chat and community support
-- [Reddit](https://www.reddit.com/r/Supabase/) - Official Supabase subreddit
-
-Share your self-hosting experience:
-
-- [GitHub Discussions](https://github.com/orgs/supabase/discussions/39820) - "Self-hosting: What's working (and what's not)?"
-
-## Important Notes
-
-### Security
-
-⚠️ **The default configuration is not secure for production use.**
-
-Before deploying to production, you must:
-- Update all default passwords and secrets in the `.env` file
-- Generate new JWT secrets
-- Review and update CORS settings
-- Consider setting up a secure proxy in front of self-hosted Supabase
-- Review and adjust network security configuration (ACLs, etc.)
-- Set up proper backup procedures
-
-See the [security section](https://supabase.com/docs/guides/self-hosting/docker#configuring-and-securing-supabase) in the documentation.
-
-## License
-
-This repository is licensed under the Apache 2.0 License. See the main [Supabase repository](https://github.com/supabase/supabase) for details.
+- [Guide API Auth & Quizz](docs/api-guide.md) — pour les développeurs frontend
+- [Schéma de base de données](docs/schema.md)
+- [Backlog (User Stories)](backlog.md)
