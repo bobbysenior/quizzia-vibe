@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quizia — Connexion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  body { overflow-x: hidden; }
+
+  /* ----- Page shell ----- */
+  .auth-shell {
+    min-height: calc(100vh - 56px);
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+  }
+
+  /* ----- Left: brand panel ----- */
+  .brand-panel {
+    position: relative;
+    background: #0e0e10;
+    color: white;
+    padding: 64px 56px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    isolation: isolate;
+  }
+  .brand-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(50% 50% at 80% 20%, oklch(60% 0.22 280 / 0.5), transparent 70%),
+      radial-gradient(40% 50% at 10% 90%, oklch(70% 0.18 200 / 0.35), transparent 70%);
+    z-index: -1;
+  }
+  .brand-panel::after {
+    /* subtle dotted grid */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0);
+    background-size: 24px 24px;
+    z-index: -1;
+    mask: radial-gradient(ellipse 80% 70% at 50% 50%, black, transparent);
+  }
+
+  .bp-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .bp-head .brand-mark { width: 28px; height: 28px; border-radius: 8px; }
+  .bp-head span { font-size: 19px; font-weight: 600; letter-spacing: -0.02em; }
+
+  .bp-body { max-width: 480px; margin: auto 0; }
+  .bp-body .eyebrow { color: rgba(255,255,255,0.55); margin-bottom: 24px; }
+  .bp-body .h1 { color: white; font-size: clamp(40px, 4.4vw, 60px); line-height: 1.02; margin-bottom: 28px; letter-spacing: -0.035em; }
+  .bp-body .h1 .accent { background: linear-gradient(120deg, oklch(75% 0.2 280), oklch(80% 0.18 200)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .bp-body p { color: rgba(255,255,255,0.7); font-size: 17px; line-height: 1.55; margin: 0; }
+
+  .bp-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; }
+  .bp-pill {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .bp-pill .dot { width: 6px; height: 6px; border-radius: 999px; background: oklch(75% 0.2 280); }
+
+  .bp-foot {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* floating ticker quote */
+  .bp-quote {
+    margin-top: 48px;
+    padding: 24px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px;
+    backdrop-filter: blur(20px);
+    max-width: 480px;
+  }
+  .bp-quote p { color: white; font-size: 16px; line-height: 1.5; margin: 0 0 12px; letter-spacing: -0.01em; }
+  .bp-quote .who { color: rgba(255,255,255,0.55); font-size: 13px; font-family: var(--font-mono); }
+
+  /* ----- Right: form panel ----- */
+  .form-panel {
+    background: var(--bg);
+    padding: 64px 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .form-card {
+    width: 100%;
+    max-width: 420px;
+  }
+  .form-card .eyebrow { margin-bottom: 14px; }
+  .form-card .h1 { font-size: clamp(32px, 3.4vw, 40px); line-height: 1.05; margin-bottom: 12px; }
+  .form-card .lede { font-size: 16px; margin-bottom: 36px; color: var(--muted); }
+
+  /* segmented tab */
+  .seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--bg-soft);
+    padding: 4px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .seg button {
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: color 200ms var(--ease);
+    position: relative;
+    z-index: 1;
+  }
+  .seg button.active { color: var(--ink); }
+  .seg .indic {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: calc(50% - 4px);
+    background: white;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04);
+    transition: transform 320ms var(--ease);
+  }
+  .seg[data-mode="signup"] .indic { transform: translateX(calc(100% + 0px)); }
+
+  /* form */
+  .form { display: flex; flex-direction: column; gap: 18px; }
+  .form .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .pwd-wrap { position: relative; }
+  .pwd-wrap button {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 200ms var(--ease);
+  }
+  .pwd-wrap button:hover { background: var(--bg-soft); color: var(--ink); }
+
+  .pwd-strength { display: flex; gap: 4px; margin-top: 4px; height: 4px; }
+  .pwd-strength span { flex: 1; background: var(--line-2); border-radius: 2px; transition: background 200ms var(--ease); }
+  .pwd-strength span.on1 { background: var(--bad); }
+  .pwd-strength span.on2 { background: var(--warn); }
+  .pwd-strength span.on3 { background: var(--good); }
+
+  .check {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .check input { appearance: none; -webkit-appearance: none; margin: 2px 0 0; width: 18px; height: 18px; border: 1.5px solid var(--line); border-radius: 5px; cursor: pointer; transition: all 200ms var(--ease); position: relative; flex-shrink: 0; }
+  .check input:checked { background: var(--ink); border-color: var(--ink); }
+  .check input:checked::after {
+    content: ""; position: absolute; left: 5px; top: 1px;
+    width: 5px; height: 10px;
+    border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .check a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+  .forgot { font-size: 13px; color: var(--muted); }
+  .forgot:hover { color: var(--ink); }
+
+  .form-actions { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+
+  .or {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--muted-2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 4px 0;
+  }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
+
+  .social {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .social button {
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 200ms var(--ease);
+  }
+  .social button:hover { border-color: var(--ink); background: var(--bg-soft); }
+  .social svg { width: 16px; height: 16px; }
+
+  .switch-mode { margin-top: 28px; font-size: 14px; color: var(--muted); text-align: center; }
+  .switch-mode a { color: var(--ink); font-weight: 500; }
+  .switch-mode a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  .guest {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+  }
+  .guest a { color: var(--accent-ink); }
+  .guest a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* signup-only fields hidden by default */
+  .field-signup { display: none; }
+  body[data-mode="signup"] .field-signup { display: flex; }
+  body[data-mode="signup"] .forgot-row { display: none; }
+  body[data-mode="login"] .check-terms { display: none; }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .auth-shell { grid-template-columns: 1fr; }
+    .brand-panel { padding: 48px 32px; min-height: 320px; }
+    .bp-body { margin: 24px 0; }
+    .bp-quote { display: none; }
+    .form-panel { padding: 48px 24px; }
+  }
+</style>
+</head>
+<body data-mode="login" data-screen-label="02 Login">
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark"></span>
+        Quizia
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Découvrir</a>
+        <a href="index.html#bibliotheque">Bibliothèque</a>
+        <a href="stats.html">Statistiques</a>
+        <a href="login.html" class="active">Se connecter</a>
+      </nav>
+      <a href="index.html" class="nav-cta">Retour</a>
+    </div>
+  </header>
+
+  <main class="auth-shell">
+
+    <!-- ============ LEFT — brand panel ============ -->
+    <aside class="brand-panel">
+      <div class="bp-head">
+        <span class="brand-mark"></span>
+        <span>Quizia</span>
+      </div>
+
+      <div class="bp-body">
+        <div class="eyebrow"><span class="dot"></span>Pour les créateurs</div>
+        <h1 class="h1" id="bp-title">
+          Créez. Publiez. <br />
+          <span class="accent" id="bp-accent">Mesurez.</span>
+        </h1>
+        <p id="bp-copy">
+          Connectez-vous pour générer vos propres quiz avec l'IA, suivre vos performances et publier en un clic.
+        </p>
+
+        <div class="bp-pills">
+          <span class="bp-pill"><span class="dot"></span>Génération IA</span>
+          <span class="bp-pill"><span class="dot"></span>Édition libre</span>
+          <span class="bp-pill"><span class="dot"></span>Stats temps réel</span>
+        </div>
+
+        <div class="bp-quote">
+          <p>« J'ai créé un quiz pour ma classe de 28 élèves en trois minutes. Le plus long, c'était de choisir le thème. »</p>
+          <div class="who">Léa M. — Professeure d'histoire-géo</div>
+        </div>
+      </div>
+
+      <div class="bp-foot">
+        <span>v1.0 · hackathon edition</span>
+        <span>Aucune carte requise</span>
+      </div>
+    </aside>
+
+    <!-- ============ RIGHT — form panel ============ -->
+    <section class="form-panel">
+      <div class="form-card">
+        <div class="eyebrow"><span class="dot"></span><span id="form-eyebrow">Bon retour</span></div>
+        <h1 class="h1" id="form-title">Connexion à votre compte.</h1>
+        <p class="lede" id="form-lede">Une adresse, un mot de passe — c'est tout ce qu'il faut.</p>
+
+        <!-- segmented switch -->
+        <div class="seg" data-mode="login" id="seg">
+          <span class="indic"></span>
+          <button type="button" class="active" data-target="login">Connexion</button>
+          <button type="button" data-target="signup">Inscription</button>
+        </div>
+
+        <form class="form" id="auth-form" autocomplete="on" novalidate>
+          <div class="row-2 field-signup">
+            <div class="field">
+              <label for="firstname">Prénom</label>
+              <input id="firstname" name="firstname" type="text" placeholder="Camille" />
+            </div>
+            <div class="field">
+              <label for="lastname">Nom</label>
+              <input id="lastname" name="lastname" type="text" placeholder="Durand" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email">Adresse e-mail</label>
+            <input id="email" name="email" type="email" placeholder="vous@exemple.fr" required />
+          </div>
+
+          <div class="field">
+            <label for="password">Mot de passe</label>
+            <div class="pwd-wrap">
+              <input id="password" name="password" type="password" placeholder="••••••••••" required minlength="8" />
+              <button type="button" id="toggle-pwd">Voir</button>
+            </div>
+            <div class="pwd-strength field-signup" aria-hidden="true">
+              <span id="ps1"></span><span id="ps2"></span><span id="ps3"></span><span id="ps4"></span>
+            </div>
+            <div class="field-hint field-signup">Au moins 8 caractères, dont une majuscule et un chiffre.</div>
+          </div>
+
+          <div class="forgot-row" style="display:flex; justify-content:flex-end;">
+            <a class="forgot" href="#">Mot de passe oublié ?</a>
+          </div>
+
+          <label class="check check-terms field-signup" style="display:none;">
+            <input type="checkbox" required />
+            <span>J'accepte les <a href="#">conditions d'utilisation</a> et la <a href="#">politique de confidentialité</a>.</span>
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-block" id="submit">
+              <span id="submit-label">Se connecter</span> <span class="arr">→</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="or">ou continuer avec</div>
+        <div class="social">
+          <button type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4c-.2 1.3-.9 2.3-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.5l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.9-1.8-5.7-4.2H3v2.6C4.7 19.7 8.1 22 12 22z"/><path fill="#FBBC05" d="M6.3 13.8c-.2-.6-.3-1.2-.3-1.8s.1-1.2.3-1.8V7.6H3C2.4 8.9 2 10.4 2 12s.4 3.1 1 4.4l3.3-2.6z"/><path fill="#EA4335" d="M12 5.8c1.5 0 2.8.5 3.8 1.5l2.8-2.8C16.9 2.9 14.7 2 12 2 8.1 2 4.7 4.3 3 7.6l3.3 2.6c.8-2.4 3.1-4.2 5.7-4.2z"/></svg>
+            Google
+          </button>
+          <button type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M16.4 1c.1 1-.3 2-.9 2.7-.7.8-1.7 1.4-2.7 1.3-.1-1 .3-2 .9-2.7C14.5 1.6 15.5 1 16.4 1zM20 17.3c-.4.9-.9 1.7-1.4 2.5-.8 1-1.4 1.7-1.9 2.1-.7.6-1.5 1-2.3 1-.6 0-1.3-.2-2.2-.5s-1.7-.5-2.4-.5c-.7 0-1.5.2-2.4.5s-1.6.5-2.1.5c-.9 0-1.7-.4-2.5-1.1-.5-.4-1.2-1.2-2-2.2-.9-1.1-1.6-2.4-2.2-3.8C.9 14.2.5 12.7.5 11.2c0-1.7.4-3.2 1.1-4.4.6-1 1.4-1.7 2.4-2.3 1-.5 2.1-.8 3.2-.9.6 0 1.4.2 2.5.6 1 .4 1.7.6 2 .6.2 0 1-.2 2.3-.7 1.3-.4 2.3-.6 3.2-.5 2.3.2 4 1.1 5.2 2.8-2 1.2-3 2.9-3 5.1 0 1.7.6 3.2 1.9 4.3.6.5 1.2.9 1.9 1.2-.2.4-.3.9-.6 1.3z"/></svg>
+            Apple
+          </button>
+        </div>
+
+        <p class="switch-mode">
+          <span id="switch-q">Pas encore de compte ?</span>
+          <a href="#" id="switch-link">Créer un compte →</a>
+        </p>
+        <p class="guest">
+          <a href="index.html#bibliotheque">Continuer sans compte</a>
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const body = document.body;
+    const seg = document.getElementById('seg');
+    const submitLabel = document.getElementById('submit-label');
+    const switchQ = document.getElementById('switch-q');
+    const switchLink = document.getElementById('switch-link');
+    const formEyebrow = document.getElementById('form-eyebrow');
+    const formTitle = document.getElementById('form-title');
+    const formLede = document.getElementById('form-lede');
+    const bpTitle = document.getElementById('bp-title');
+    const bpAccent = document.getElementById('bp-accent');
+    const bpCopy = document.getElementById('bp-copy');
+
+    const COPY = {
+      login: {
+        eyebrow: "Bon retour",
+        title: "Connexion à votre compte.",
+        lede: "Une adresse, un mot de passe — c'est tout ce qu'il faut.",
+        submit: "Se connecter",
+        switchQ: "Pas encore de compte ?",
+        switchTo: "signup",
+        switchLabel: "Créer un compte →",
+        bpAccentText: "Mesurez.",
+        bpTitlePrefix: "Créez. Publiez.",
+        bpCopy: "Connectez-vous pour générer vos propres quiz avec l'IA, suivre vos performances et publier en un clic."
+      },
+      signup: {
+        eyebrow: "Bienvenue",
+        title: "Créez votre compte.",
+        lede: "Trente secondes. Pas de carte bancaire. Pas de pubs.",
+        submit: "Créer mon compte",
+        switchQ: "Déjà inscrit·e ?",
+        switchTo: "login",
+        switchLabel: "Se connecter →",
+        bpAccentText: "Démarrez.",
+        bpTitlePrefix: "Une idée.",
+        bpCopy: "Décrivez votre sujet, choisissez le nombre de questions, laissez l'IA composer. Vous gardez le contrôle, toujours."
+      }
+    };
+
+    function setMode(mode) {
+      body.dataset.mode = mode;
+      seg.dataset.mode = mode;
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.target === mode));
+      const c = COPY[mode];
+      submitLabel.textContent = c.submit;
+      switchQ.textContent = c.switchQ;
+      switchLink.textContent = c.switchLabel;
+      switchLink.dataset.to = c.switchTo;
+      formEyebrow.textContent = c.eyebrow;
+      formTitle.textContent = c.title;
+      formLede.textContent = c.lede;
+      bpTitle.firstChild.textContent = c.bpTitlePrefix + " ";
+      bpAccent.textContent = c.bpAccentText;
+      bpCopy.textContent = c.bpCopy;
+    }
+
+    seg.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => setMode(b.dataset.target));
+    });
+    switchLink.addEventListener('click', (e) => { e.preventDefault(); setMode(switchLink.dataset.to || 'signup'); });
+
+    // toggle password visibility
+    const pwd = document.getElementById('password');
+    const togglePwd = document.getElementById('toggle-pwd');
+    togglePwd.addEventListener('click', () => {
+      const isPwd = pwd.type === 'password';
+      pwd.type = isPwd ? 'text' : 'password';
+      togglePwd.textContent = isPwd ? 'Cacher' : 'Voir';
+    });
+
+    // password strength
+    function scorePwd(v) {
+      let s = 0;
+      if (v.length >= 8) s++;
+      if (/[A-Z]/.test(v)) s++;
+      if (/[0-9]/.test(v)) s++;
+      if (/[^A-Za-z0-9]/.test(v)) s++;
+      return s;
+    }
+    pwd.addEventListener('input', () => {
+      const s = scorePwd(pwd.value);
+      ['ps1','ps2','ps3','ps4'].forEach((id, i) => {
+        const el = document.getElementById(id);
+        el.classList.remove('on1','on2','on3');
+        if (i < s) {
+          if (s <= 1) el.classList.add('on1');
+          else if (s <= 2) el.classList.add('on2');
+          else el.classList.add('on3');
+        }
+      });
+    });
+
+    // form submit — pretend
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit');
+      btn.style.transform = 'scale(0.98)';
+      submitLabel.textContent = body.dataset.mode === 'login' ? 'Connexion…' : 'Création…';
+      setTimeout(() => {
+        window.location.href = 'stats.html';
+      }, 700);
+    });
+  </script>
+
+</body>
+</html>

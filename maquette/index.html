@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quizia — Des quiz, générés par IA.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  /* =========================================================
+     LANDING — sections spécifiques
+     ========================================================= */
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    padding: 96px 32px 80px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero-aurora {
+    position: absolute;
+    inset: -10% -10% auto -10%;
+    height: 720px;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(40% 50% at 20% 30%, oklch(85% 0.13 290 / 0.6), transparent 70%),
+      radial-gradient(40% 50% at 80% 20%, oklch(88% 0.1 200 / 0.5), transparent 70%),
+      radial-gradient(50% 60% at 50% 70%, oklch(92% 0.08 60 / 0.55), transparent 70%);
+    filter: blur(40px);
+    opacity: 0.85;
+  }
+  .hero-inner { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+  .hero .eyebrow { margin-bottom: 28px; }
+  .hero .display { margin-bottom: 24px; }
+  .hero .lede { max-width: 640px; margin: 0 auto 40px; }
+  .hero-ctas { display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  /* ---------- Live quiz preview ---------- */
+  .stage {
+    position: relative;
+    margin-top: 72px;
+    perspective: 1600px;
+  }
+  .device {
+    width: min(900px, 100%);
+    margin: 0 auto;
+    background: var(--bg-elev);
+    border-radius: 28px;
+    border: 1px solid var(--line-2);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.12), 0 6px 14px rgba(0,0,0,0.04);
+    overflow: hidden;
+    transform: rotateX(2deg);
+  }
+  .device-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg-soft);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .device-bar i { width: 11px; height: 11px; border-radius: 999px; background: var(--line); display: block; }
+  .device-bar i:nth-child(1) { background: #fc6058; }
+  .device-bar i:nth-child(2) { background: #fdbc40; }
+  .device-bar i:nth-child(3) { background: #34c84a; }
+  .device-bar .url {
+    margin-left: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .quiz-stage { padding: 40px; min-height: 380px; display: grid; grid-template-columns: 1fr; gap: 28px; }
+  .quiz-progress {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .quiz-progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--line-2);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 0 16px;
+  }
+  .quiz-progress-bar span {
+    display: block;
+    height: 100%;
+    width: 60%;
+    background: var(--ink);
+    border-radius: 999px;
+    transition: width 600ms var(--ease);
+  }
+  .quiz-question {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .quiz-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .quiz-ans {
+    text-align: left;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 15px;
+    color: var(--ink);
+    transition: all 200ms var(--ease);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .quiz-ans:hover { border-color: var(--ink); transform: translateY(-1px); }
+  .quiz-ans .key {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    background: var(--bg-soft);
+    color: var(--muted);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 200ms var(--ease);
+  }
+  .quiz-ans:hover .key { background: var(--ink); color: white; }
+  .quiz-ans.correct { border-color: var(--good); background: oklch(96% 0.06 150); }
+  .quiz-ans.correct .key { background: var(--good); color: white; }
+
+  /* ---------- Stats marquee ---------- */
+  .marquee {
+    margin: 80px 0 0;
+    padding: 24px 0;
+    border-top: 1px solid var(--line-2);
+    border-bottom: 1px solid var(--line-2);
+    display: flex; justify-content: space-around; flex-wrap: wrap; gap: 40px;
+    text-align: center;
+  }
+  .mq-stat .num { font-size: 36px; font-weight: 600; letter-spacing: -0.025em; }
+  .mq-stat .lbl { font-size: 13px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ---------- Section ---------- */
+  section.block { padding: 120px 32px; }
+  .block-head { text-align: center; max-width: 720px; margin: 0 auto 56px; }
+  .block-head .eyebrow { margin-bottom: 16px; }
+  .block-head .h2 { margin-bottom: 20px; }
+  .block-head .lede { margin: 0 auto; }
+
+  /* ---------- How it works ---------- */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .step {
+    background: var(--bg-elev);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: all 300ms var(--ease);
+    min-height: 280px;
+  }
+  .step:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); }
+  .step .n {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .step .h3 { margin-top: auto; }
+  .step .desc { color: var(--ink-2); line-height: 1.5; font-size: 15px; }
+
+  .step-visual {
+    height: 120px;
+    border-radius: 14px;
+    background: var(--bg-soft);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  /* visual 1 - typing prompt */
+  .v-prompt {
+    width: 80%;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink-2);
+    position: relative;
+  }
+  .v-prompt::after {
+    content: "";
+    display: inline-block;
+    width: 7px; height: 14px;
+    background: var(--ink);
+    vertical-align: -3px;
+    margin-left: 2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  /* visual 2 - generating */
+  .v-orb {
+    width: 64px; height: 64px;
+    border-radius: 999px;
+    background: conic-gradient(from 0deg, var(--accent), oklch(75% 0.2 320), oklch(80% 0.15 200), var(--accent));
+    animation: spin 4s linear infinite;
+    box-shadow: 0 0 40px oklch(70% 0.2 280 / 0.4);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* visual 3 - share */
+  .v-link {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--ink);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 10px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .v-link span { color: var(--muted-2); }
+
+  /* ---------- Quiz library ---------- */
+  .quiz-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .quiz-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex; flex-direction: column;
+    min-height: 220px;
+    transition: all 300ms var(--ease);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .quiz-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-2); border-color: var(--line); }
+  .quiz-card .theme {
+    height: 90px;
+    border-radius: 14px;
+    margin: -24px -24px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .quiz-card .theme.t1 { background: linear-gradient(135deg, oklch(75% 0.18 280), oklch(85% 0.14 240)); }
+  .quiz-card .theme.t2 { background: linear-gradient(135deg, oklch(80% 0.16 60), oklch(85% 0.16 30)); }
+  .quiz-card .theme.t3 { background: linear-gradient(135deg, oklch(78% 0.14 150), oklch(85% 0.12 180)); }
+  .quiz-card .theme.t4 { background: linear-gradient(135deg, oklch(72% 0.2 340), oklch(80% 0.18 20)); }
+  .quiz-card .theme.t5 { background: linear-gradient(135deg, oklch(75% 0.14 220), oklch(85% 0.1 260)); }
+  .quiz-card .theme.t6 { background: linear-gradient(135deg, oklch(78% 0.15 110), oklch(85% 0.12 80)); }
+  .quiz-card .theme::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(40% 60% at 70% 30%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(50% 60% at 20% 80%, rgba(0,0,0,0.15), transparent 60%);
+  }
+  .quiz-card .theme .glyph {
+    position: absolute;
+    right: 16px; bottom: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: rgba(0,0,0,0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .quiz-card h3 {
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+  .quiz-card .meta {
+    display: flex; gap: 8px;
+    margin-top: auto;
+  }
+
+  /* ---------- CTA banner ---------- */
+  .cta-banner {
+    margin: 0 32px;
+    background: var(--ink);
+    color: white;
+    border-radius: 32px;
+    padding: 80px 64px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(40% 60% at 80% 20%, oklch(60% 0.22 280 / 0.4), transparent 70%),
+      radial-gradient(40% 60% at 20% 80%, oklch(70% 0.2 200 / 0.3), transparent 70%);
+  }
+  .cta-banner > * { position: relative; }
+  .cta-banner .h1 { color: white; margin-bottom: 16px; }
+  .cta-banner .lede { color: rgba(255,255,255,0.7); margin: 0 auto 32px; max-width: 540px; }
+  .cta-banner .btn-primary { background: white; color: var(--ink); }
+  .cta-banner .btn-ghost { color: white; border-color: rgba(255,255,255,0.25); }
+  .cta-banner .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: white; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    .steps, .quiz-grid { grid-template-columns: 1fr; }
+    .quiz-answers { grid-template-columns: 1fr; }
+    .quiz-stage { padding: 24px; }
+    .quiz-question { font-size: 22px; }
+    .cta-banner { padding: 56px 28px; }
+    section.block { padding: 80px 24px; }
+    .hero { padding: 64px 24px 48px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ NAVIGATION ============ -->
+  <header class="nav" data-screen-label="01 Landing">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark"></span>
+        Quizia
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="active">Découvrir</a>
+        <a href="index.html#bibliotheque">Bibliothèque</a>
+        <a href="stats.html">Statistiques</a>
+        <a href="login.html">Se connecter</a>
+      </nav>
+      <a href="login.html" class="nav-cta">Créer un quiz</a>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-aurora"></div>
+    <div class="hero-inner">
+      <div class="eyebrow rise"><span class="dot"></span>Génération IA · Disponible maintenant</div>
+      <h1 class="display rise d1">
+        Des quiz, <br />
+        <span class="shine">générés en quelques secondes.</span>
+      </h1>
+      <p class="lede rise d2">
+        Décrivez un sujet. Choisissez un nombre de questions. Quizia compose le quiz, vous le relisez, vous le partagez. C'est tout.
+      </p>
+      <div class="hero-ctas rise d3">
+        <a href="login.html" class="btn btn-primary">Commencer gratuitement <span class="arr">→</span></a>
+        <a href="#bibliotheque" class="btn btn-ghost">Parcourir les quiz</a>
+      </div>
+
+      <!-- live preview -->
+      <div class="stage rise d4">
+        <div class="device">
+          <div class="device-bar">
+            <i></i><i></i><i></i>
+            <span class="url">quizia.app / quiz / l-histoire-du-cinema</span>
+          </div>
+          <div class="quiz-stage">
+            <div class="quiz-progress">
+              <span>Question 6 / 10</span>
+              <div class="quiz-progress-bar"><span></span></div>
+              <span>02:14</span>
+            </div>
+            <div class="quiz-question">
+              Quel réalisateur a remporté la Palme d'Or en 2019 ?
+            </div>
+            <div class="quiz-answers">
+              <button class="quiz-ans"><span class="key">A</span>Quentin Tarantino</button>
+              <button class="quiz-ans correct"><span class="key">B</span>Bong Joon-ho</button>
+              <button class="quiz-ans"><span class="key">C</span>Pedro Almodóvar</button>
+              <button class="quiz-ans"><span class="key">D</span>Céline Sciamma</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- stats marquee -->
+      <div class="marquee">
+        <div class="mq-stat"><div class="num">2,4M</div><div class="lbl">quiz joués</div></div>
+        <div class="mq-stat"><div class="num">187k</div><div class="lbl">quiz créés</div></div>
+        <div class="mq-stat"><div class="num">12s</div><div class="lbl">de génération moyenne</div></div>
+        <div class="mq-stat"><div class="num">94%</div><div class="lbl">de satisfaction</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="block" id="comment">
+    <div class="wrap">
+      <div class="block-head reveal">
+        <div class="eyebrow"><span class="dot"></span>Comment ça marche</div>
+        <h2 class="h2">Trois étapes. Aucune friction.</h2>
+        <p class="lede">De l'idée au quiz publié, en moins d'une minute. L'IA s'occupe du reste.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-visual">
+            <div class="v-prompt">Donne-moi un quiz sur la cuisine italienne</div>
+          </div>
+          <span class="n">01 — Saisir</span>
+          <h3 class="h3">Un sujet, un nombre de questions.</h3>
+          <p class="desc">Entre 5 et 30 questions. Pas de templates, pas de formulaires interminables.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-visual">
+            <div class="v-orb"></div>
+          </div>
+          <span class="n">02 — Générer</span>
+          <h3 class="h3">L'IA compose le quiz.</h3>
+          <p class="desc">Questions, réponses, bonne option. Vous relisez, vous ajustez, vous validez.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-visual">
+            <div class="v-link"><span>quizia.app/</span>cuisine-italienne</div>
+          </div>
+          <span class="n">03 — Partager</span>
+          <h3 class="h3">Publier ou garder pour soi.</h3>
+          <p class="desc">Un lien suffit. Les joueurs n'ont besoin d'aucun compte pour participer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ LIBRARY ============ -->
+  <section class="block" id="bibliotheque" style="background: var(--bg-soft); padding-top: 96px;">
+    <div class="wrap">
+      <div class="block-head reveal" style="text-align:left; max-width: none; display:flex; justify-content:space-between; align-items:end; flex-wrap:wrap; gap:24px; margin-bottom: 40px;">
+        <div>
+          <div class="eyebrow" style="margin-bottom:14px;"><span class="dot"></span>Bibliothèque publique</div>
+          <h2 class="h2">Des centaines de quiz, prêts à jouer.</h2>
+        </div>
+        <a href="#" class="btn-link">Tout explorer <span class="arr">→</span></a>
+      </div>
+
+      <div class="quiz-grid">
+        <a href="#" class="quiz-card reveal">
+          <div class="theme t1"><span class="glyph">Cinéma</span></div>
+          <h3>L'histoire du cinéma européen</h3>
+          <p class="muted" style="font-size:14px;margin:0 0 16px;">De Méliès aux frères Dardenne — un voyage en 12 questions.</p>
+          <div class="meta"><span class="tag tag-mono">12 Q</span><span class="tag">Culture</span></div>
+        </a>
+        <a href="#" class="quiz-card reveal">
+          <div class="theme t2"><span class="glyph">Cuisine</span></div>
+          <h3>La cuisine italienne, sans clichés</h3>
+          <p class="muted" style="font-size:14px;margin:0 0 16px;">Pâtes, régions, plats secrets — ce que vous croyez savoir.</p>
+          <div class="meta"><span class="tag tag-mono">15 Q</span><span class="tag">Lifestyle</span></div>
+        </a>
+        <a href="#" class="quiz-card reveal">
+          <div class="theme t3"><span class="glyph">Science</span></div>
+          <h3>Les exoplanètes habitables</h3>
+          <p class="muted" style="font-size:14px;margin:0 0 16px;">Kepler, TRAPPIST, Proxima — où chercher la vie ailleurs ?</p>
+          <div class="meta"><span class="tag tag-mono">20 Q</span><span class="tag">Astronomie</span></div>
+        </a>
+        <a href="#" class="quiz-card reveal">
+          <div class="theme t4"><span class="glyph">Musique</span></div>
+          <h3>L'âge d'or du jazz à Paris</h3>
+          <p class="muted" style="font-size:14px;margin:0 0 16px;">Saint-Germain, Le Caveau, et tout ce qui s'est joué là.</p>
+          <div class="meta"><span class="tag tag-mono">10 Q</span><span class="tag">Histoire</span></div>
+        </a>
+        <a href="#" class="quiz-card reveal">
+          <div class="theme t5"><span class="glyph">Tech</span></div>
+          <h3>Petite histoire du Web</h3>
+          <p class="muted" style="font-size:14px;margin:0 0 16px;">De Tim Berners-Lee aux PWA — 30 ans en 18 questions.</p>
+          <div class="meta"><span class="tag tag-mono">18 Q</span><span class="tag">Technologie</span></div>
+        </a>
+        <a href="#" class="quiz-card reveal">
+          <div class="theme t6"><span class="glyph">Nature</span></div>
+          <h3>Les forêts primaires d'Europe</h3>
+          <p class="muted" style="font-size:14px;margin:0 0 16px;">Bialowieza, Sainte-Baume — ce qu'il reste de sauvage.</p>
+          <div class="meta"><span class="tag tag-mono">8 Q</span><span class="tag">Écologie</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA BANNER ============ -->
+  <section style="padding: 80px 0;">
+    <div class="cta-banner reveal">
+      <div class="eyebrow" style="color: rgba(255,255,255,0.65); margin-bottom: 20px;">
+        <span class="dot" style="background: white;"></span>Gratuit, sans carte bancaire
+      </div>
+      <h2 class="h1">Créez votre premier quiz<br />en moins d'une minute.</h2>
+      <p class="lede">Inscrivez-vous, décrivez votre sujet, laissez l'IA composer. Vous gardez le dernier mot sur chaque question.</p>
+      <div class="hero-ctas">
+        <a href="login.html" class="btn btn-primary">Créer mon compte <span class="arr">→</span></a>
+        <a href="stats.html" class="btn btn-ghost">Voir un exemple de tableau de bord</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>© 2026 Quizia · Conçu pour le hackathon Transformation Numérique</div>
+      <div class="footer-links">
+        <a href="index.html">Découvrir</a>
+        <a href="stats.html">Statistiques</a>
+        <a href="login.html">Connexion</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Reveal on scroll
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // Live quiz preview — rotate question
+    const questions = [
+      {
+        url: "quizia.app / quiz / l-histoire-du-cinema",
+        q: "Quel réalisateur a remporté la Palme d'Or en 2019 ?",
+        n: 6, total: 10, time: "02:14",
+        answers: [["A","Quentin Tarantino",false],["B","Bong Joon-ho",true],["C","Pedro Almodóvar",false],["D","Céline Sciamma",false]]
+      },
+      {
+        url: "quizia.app / quiz / cuisine-italienne",
+        q: "De quelle région provient la véritable carbonara ?",
+        n: 3, total: 15, time: "01:42",
+        answers: [["A","Toscane",false],["B","Lombardie",false],["C","Latium",true],["D","Sicile",false]]
+      },
+      {
+        url: "quizia.app / quiz / les-exoplanetes-habitables",
+        q: "Combien de planètes orbitent autour de TRAPPIST-1 ?",
+        n: 12, total: 20, time: "04:08",
+        answers: [["A","Cinq",false],["B","Sept",true],["C","Neuf",false],["D","Onze",false]]
+      }
+    ];
+    let qi = 0;
+    const stage = document.querySelector('.quiz-stage');
+    const url = document.querySelector('.device-bar .url');
+    function setQuiz(i) {
+      const Q = questions[i];
+      url.textContent = Q.url;
+      stage.innerHTML = `
+        <div class="quiz-progress">
+          <span>Question ${Q.n} / ${Q.total}</span>
+          <div class="quiz-progress-bar"><span style="width:${(Q.n/Q.total)*100}%"></span></div>
+          <span>${Q.time}</span>
+        </div>
+        <div class="quiz-question">${Q.q}</div>
+        <div class="quiz-answers">
+          ${Q.answers.map(([k,t,c]) => `<button class="quiz-ans${c?' correct':''}"><span class="key">${k}</span>${t}</button>`).join('')}
+        </div>
+      `;
+    }
+    setInterval(() => { qi = (qi + 1) % questions.length; setQuiz(qi); }, 5200);
+  </script>
+
+</body>
+</html>
