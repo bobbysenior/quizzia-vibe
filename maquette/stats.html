@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Quizia — Statistiques</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  /* ============================================================
+     STATS PAGE
+     ============================================================ */
+
+  .stats-shell { padding: 48px 32px 80px; max-width: 1200px; margin: 0 auto; }
+
+  /* ---------- Page header ---------- */
+  .page-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: 24px;
+    margin-bottom: 40px;
+  }
+  .ph-left .eyebrow { margin-bottom: 14px; }
+  .ph-left .h1 { font-size: clamp(36px, 4.4vw, 56px); letter-spacing: -0.035em; line-height: 1.05; margin-bottom: 12px; }
+  .ph-left .lede { font-size: 17px; color: var(--muted); margin: 0; }
+
+  .ph-right { display: flex; align-items: center; gap: 12px; }
+  .user-chip {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line-2);
+    padding: 8px 12px 8px 8px;
+    border-radius: 999px;
+  }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, oklch(75% 0.2 280), oklch(80% 0.18 200));
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 14px;
+    letter-spacing: -0.01em;
+  }
+  .user-chip .name { font-size: 14px; font-weight: 500; }
+  .user-chip .role { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+  /* ---------- Range picker ---------- */
+  .range {
+    display: inline-flex;
+    background: var(--bg-soft);
+    padding: 4px;
+    border-radius: 999px;
+    gap: 0;
+    position: relative;
+  }
+  .range button {
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: color 200ms var(--ease), background 200ms var(--ease);
+  }
+  .range button.active {
+    background: white;
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  /* ---------- KPI cards ---------- */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi {
+    background: var(--bg-elev);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 300ms var(--ease);
+  }
+  .kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); border-color: var(--line); }
+  .kpi-head {
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 16px;
+    letter-spacing: -0.005em;
+  }
+  .kpi-icon {
+    width: 28px; height: 28px;
+    border-radius: 9px;
+    background: var(--bg-soft);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-2);
+  }
+  .kpi-icon svg { width: 14px; height: 14px; }
+  .kpi .num {
+    font-size: 44px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    margin-bottom: 12px;
+  }
+  .kpi .num .unit { font-size: 22px; color: var(--muted); margin-left: 2px; font-weight: 500; }
+  .kpi-foot { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .delta { font-family: var(--font-mono); font-weight: 500; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+  .delta.up { background: oklch(96% 0.06 150); color: oklch(45% 0.18 150); }
+  .delta.down { background: oklch(96% 0.05 25); color: oklch(45% 0.2 25); }
+  .delta.flat { background: var(--bg-soft); color: var(--muted); }
+  .kpi-foot .lbl { color: var(--muted); font-size: 12px; }
+
+  /* sparkline */
+  .spark {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    width: 90px; height: 32px;
+    opacity: 0.9;
+  }
+
+  /* ---------- Chart card ---------- */
+  .panel {
+    background: var(--bg-elev);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .panel-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .panel-head h3 {
+    font-size: 19px;
+    letter-spacing: -0.018em;
+    margin: 0;
+  }
+  .panel-head .sub { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+  .panel-actions { display: flex; gap: 10px; align-items: center; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 6px; vertical-align: 0; }
+  .legend .a i { background: var(--ink); }
+  .legend .b i { background: var(--accent); }
+
+  /* ---------- Two-column row ---------- */
+  .row-2col {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  /* ---------- Distribution donut ---------- */
+  .donut-wrap {
+    display: flex; align-items: center; gap: 28px;
+  }
+  .donut {
+    width: 160px; height: 160px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .donut .center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .donut .center .v { font-size: 28px; font-weight: 600; letter-spacing: -0.025em; line-height: 1; }
+  .donut .center .l { font-size: 11px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .dl-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; gap: 12px; }
+  .dl-row .left { display: flex; align-items: center; gap: 10px; color: var(--ink-2); }
+  .dl-row .swatch { width: 10px; height: 10px; border-radius: 3px; }
+  .dl-row .pct { font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
+
+  /* ---------- History table ---------- */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .history-table th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .history-table th.num-col, .history-table td.num-col { text-align: right; }
+  .history-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--line-2);
+    font-size: 14px;
+    vertical-align: middle;
+  }
+  .history-table tr:last-child td { border-bottom: none; }
+  .history-table tr { transition: background 200ms var(--ease); }
+  .history-table tbody tr:hover { background: var(--bg-soft); }
+
+  .qcell { display: flex; align-items: center; gap: 14px; }
+  .qcell .thumb {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  }
+  .qcell .thumb.t1 { background: linear-gradient(135deg, oklch(75% 0.18 280), oklch(85% 0.14 240)); }
+  .qcell .thumb.t2 { background: linear-gradient(135deg, oklch(80% 0.16 60), oklch(85% 0.16 30)); }
+  .qcell .thumb.t3 { background: linear-gradient(135deg, oklch(78% 0.14 150), oklch(85% 0.12 180)); }
+  .qcell .thumb.t4 { background: linear-gradient(135deg, oklch(72% 0.2 340), oklch(80% 0.18 20)); }
+  .qcell .thumb.t5 { background: linear-gradient(135deg, oklch(75% 0.14 220), oklch(85% 0.1 260)); }
+  .qcell .thumb.t6 { background: linear-gradient(135deg, oklch(78% 0.15 110), oklch(85% 0.12 80)); }
+  .qcell .info .name { font-weight: 500; letter-spacing: -0.01em; }
+  .qcell .info .theme { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* score chip */
+  .score-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 13px;
+  }
+  .score-bar {
+    width: 60px; height: 6px;
+    background: var(--line-2);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .score-bar > span {
+    display: block; height: 100%;
+    border-radius: 999px;
+    background: var(--ink);
+  }
+  .score-bar > span.s-high { background: var(--good); }
+  .score-bar > span.s-mid { background: var(--warn); }
+  .score-bar > span.s-low { background: var(--bad); }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--bg-soft);
+    color: var(--ink-2);
+  }
+  .status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--muted); }
+  .status-pill.published { background: oklch(96% 0.06 150); color: oklch(40% 0.16 150); }
+  .status-pill.published::before { background: oklch(60% 0.18 150); }
+  .status-pill.archived { background: oklch(96% 0.03 60); color: oklch(50% 0.1 60); }
+  .status-pill.archived::before { background: oklch(70% 0.12 60); }
+  .status-pill.draft { background: var(--bg-soft); color: var(--muted); }
+
+  .icon-btn {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--muted);
+    transition: all 200ms var(--ease);
+  }
+  .icon-btn:hover { background: var(--bg-soft); color: var(--ink); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--line-2);
+    margin-bottom: 8px;
+    gap: 0;
+  }
+  .tabs button {
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 200ms var(--ease);
+  }
+  .tabs button.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .tabs button:hover:not(.active) { color: var(--ink-2); }
+  .tabs .count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted-2);
+    background: var(--bg-soft);
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-left: 6px;
+  }
+  .tabs button.active .count { background: var(--ink); color: white; }
+
+  /* ---------- Quiz cards in My Quizzes ---------- */
+  .my-quiz {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .mq-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius-lg);
+    padding: 0;
+    overflow: hidden;
+    transition: all 300ms var(--ease);
+  }
+  .mq-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+  .mq-cover { height: 100px; position: relative; }
+  .mq-cover.c1 { background: linear-gradient(135deg, oklch(75% 0.18 280), oklch(85% 0.14 240)); }
+  .mq-cover.c2 { background: linear-gradient(135deg, oklch(80% 0.16 60), oklch(85% 0.16 30)); }
+  .mq-cover.c3 { background: linear-gradient(135deg, oklch(78% 0.14 150), oklch(85% 0.12 180)); }
+  .mq-cover .badge {
+    position: absolute; top: 12px; right: 12px;
+  }
+  .mq-body { padding: 16px 20px 20px; }
+  .mq-body h4 { font-size: 16px; letter-spacing: -0.015em; margin: 0 0 6px; }
+  .mq-meta {
+    display: flex; gap: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 14px;
+  }
+  .mq-meta span::before { content: "·"; margin-right: 10px; color: var(--line); }
+  .mq-meta span:first-child::before { display: none; }
+  .mq-actions { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+  .mq-actions .views {
+    font-size: 13px; color: var(--muted);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .mq-actions .icons { display: flex; gap: 4px; }
+
+  /* responsive */
+  @media (max-width: 980px) {
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .row-2col { grid-template-columns: 1fr; }
+    .my-quiz { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .kpis, .my-quiz { grid-template-columns: 1fr; }
+    .stats-shell { padding: 32px 20px 64px; }
+    .history-table .hide-sm { display: none; }
+  }
+
+  /* hide tab panels by default */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body data-screen-label="03 Stats">
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark"></span>
+        Quizia
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Découvrir</a>
+        <a href="index.html#bibliotheque">Bibliothèque</a>
+        <a href="stats.html" class="active">Statistiques</a>
+        <a href="#" id="logout">Déconnexion</a>
+      </nav>
+      <a href="#" class="nav-cta">+ Nouveau quiz</a>
+    </div>
+  </header>
+
+  <main class="stats-shell">
+
+    <!-- ============ HEADER ============ -->
+    <div class="page-head">
+      <div class="ph-left">
+        <div class="eyebrow"><span class="dot"></span>Tableau de bord · Mai 2026</div>
+        <h1 class="h1">Bonjour Camille.</h1>
+        <p class="lede">Votre activité, vos quiz, vos résultats — d'un seul coup d'œil.</p>
+      </div>
+      <div class="ph-right">
+        <div class="range" id="range">
+          <button class="active" data-r="7j">7 jours</button>
+          <button data-r="30j">30 jours</button>
+          <button data-r="90j">90 jours</button>
+          <button data-r="annee">Année</button>
+        </div>
+        <div class="user-chip">
+          <div class="avatar">CD</div>
+          <div>
+            <div class="name">Camille Durand</div>
+            <div class="role"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9efdfff3f7f2f2fbdeefebf7e4f7ffb0ffeeee">[email&#160;protected]</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ KPI CARDS ============ -->
+    <div class="kpis">
+      <!-- Quiz complétés -->
+      <div class="kpi">
+        <div class="kpi-head">
+          Quiz complétés
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+        </div>
+        <div class="num">47</div>
+        <div class="kpi-foot">
+          <span class="delta up">+8</span>
+          <span class="lbl">vs. semaine précédente</span>
+        </div>
+        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#1d1d1f" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"
+            points="0,24 10,20 20,22 30,16 40,18 50,12 60,14 70,8 80,10 90,6 100,4"/>
+        </svg>
+      </div>
+      <!-- Quiz créés -->
+      <div class="kpi">
+        <div class="kpi-head">
+          Quiz créés
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+        </div>
+        <div class="num">12</div>
+        <div class="kpi-foot">
+          <span class="delta up">+3</span>
+          <span class="lbl">depuis 7 jours</span>
+        </div>
+        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#1d1d1f" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"
+            points="0,28 10,26 20,24 30,22 40,20 50,16 60,18 70,14 80,12 90,10 100,6"/>
+        </svg>
+      </div>
+      <!-- Quiz archivés -->
+      <div class="kpi">
+        <div class="kpi-head">
+          Quiz archivés
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+          </div>
+        </div>
+        <div class="num">5</div>
+        <div class="kpi-foot">
+          <span class="delta flat">±0</span>
+          <span class="lbl">stable</span>
+        </div>
+        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#1d1d1f" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"
+            points="0,18 10,16 20,18 30,16 40,18 50,16 60,18 70,16 80,18 90,16 100,18"/>
+        </svg>
+      </div>
+      <!-- Score moyen -->
+      <div class="kpi">
+        <div class="kpi-head">
+          Score moyen
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+        </div>
+        <div class="num">82<span class="unit">%</span></div>
+        <div class="kpi-foot">
+          <span class="delta up">+4 pts</span>
+          <span class="lbl">par rapport à 30j</span>
+        </div>
+        <svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#1d1d1f" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"
+            points="0,20 10,18 20,16 30,18 40,14 50,12 60,16 70,10 80,12 90,8 100,6"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ============ CHART ============ -->
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>Évolution de vos scores</h3>
+          <p class="sub">Score moyen par quiz complété — 30 derniers jours</p>
+        </div>
+        <div class="panel-actions">
+          <div class="legend">
+            <span class="a"><i></i>Score moyen</span>
+            <span class="b"><i></i>Quiz complétés</span>
+          </div>
+        </div>
+      </div>
+      <svg id="chart" viewBox="0 0 1000 320" preserveAspectRatio="none" style="width:100%; height:280px;">
+        <!-- horizontal gridlines -->
+        <g stroke="#e8e8ed" stroke-width="1">
+          <line x1="40" y1="40"  x2="980" y2="40"/>
+          <line x1="40" y1="100" x2="980" y2="100"/>
+          <line x1="40" y1="160" x2="980" y2="160"/>
+          <line x1="40" y1="220" x2="980" y2="220"/>
+          <line x1="40" y1="280" x2="980" y2="280"/>
+        </g>
+        <!-- y labels -->
+        <g font-family="Geist Mono, monospace" font-size="11" fill="#86868b">
+          <text x="0" y="44">100</text>
+          <text x="0" y="104">75</text>
+          <text x="0" y="164">50</text>
+          <text x="0" y="224">25</text>
+          <text x="0" y="284">0</text>
+        </g>
+        <!-- area under score -->
+        <defs>
+          <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1d1d1f" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#1d1d1f" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path id="score-area" fill="url(#area-grad)" d=""/>
+        <!-- score line -->
+        <path id="score-line" fill="none" stroke="#1d1d1f" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" d=""/>
+        <!-- completions bars -->
+        <g id="bars"></g>
+        <!-- dots -->
+        <g id="dots"></g>
+        <!-- x labels -->
+        <g id="x-labels" font-family="Geist Mono, monospace" font-size="11" fill="#86868b"></g>
+        <!-- hover -->
+        <g id="hover" opacity="0">
+          <line id="hover-line" stroke="#d2d2d7" stroke-dasharray="3 4" y1="40" y2="280"/>
+          <circle id="hover-dot" r="5" fill="white" stroke="#1d1d1f" stroke-width="2.4"/>
+          <g id="hover-tip" transform="translate(0,0)">
+            <rect x="-58" y="-54" width="116" height="42" rx="8" fill="#1d1d1f"/>
+            <text id="hover-score" x="0" y="-36" text-anchor="middle" fill="white" font-family="Geist, sans-serif" font-size="13" font-weight="600">—</text>
+            <text id="hover-date" x="0" y="-20" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Geist Mono, monospace" font-size="10">—</text>
+          </g>
+        </g>
+        <rect id="chart-overlay" x="40" y="40" width="940" height="240" fill="transparent"/>
+      </svg>
+    </div>
+
+    <!-- ============ ROW 2 COL ============ -->
+    <div class="row-2col">
+      <!-- ============ HISTORIQUE ============ -->
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Historique récent</h3>
+            <p class="sub">Vos derniers quiz complétés et leurs scores</p>
+          </div>
+          <a href="#" class="btn-link">Tout voir <span class="arr">→</span></a>
+        </div>
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Quiz</th>
+              <th class="hide-sm">Date</th>
+              <th class="hide-sm">Durée</th>
+              <th class="num-col">Score</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr>
+              <td><div class="qcell"><div class="thumb t1"></div><div class="info"><div class="name">L'histoire du cinéma européen</div><div class="theme">Culture · 12 Q</div></div></div></td>
+              <td class="hide-sm">Aujourd'hui · 14:22</td>
+              <td class="hide-sm mono" style="color:var(--muted)">04:18</td>
+              <td class="num-col"><span class="score-chip">92% <span class="score-bar"><span class="s-high" style="width:92%"></span></span></span></td>
+            </tr>
+            <tr>
+              <td><div class="qcell"><div class="thumb t2"></div><div class="info"><div class="name">La cuisine italienne, sans clichés</div><div class="theme">Lifestyle · 15 Q</div></div></div></td>
+              <td class="hide-sm">Hier · 19:47</td>
+              <td class="hide-sm mono" style="color:var(--muted)">06:02</td>
+              <td class="num-col"><span class="score-chip">73% <span class="score-bar"><span class="s-mid" style="width:73%"></span></span></span></td>
+            </tr>
+            <tr>
+              <td><div class="qcell"><div class="thumb t3"></div><div class="info"><div class="name">Les exoplanètes habitables</div><div class="theme">Astronomie · 20 Q</div></div></div></td>
+              <td class="hide-sm">14 mai · 09:12</td>
+              <td class="hide-sm mono" style="color:var(--muted)">08:44</td>
+              <td class="num-col"><span class="score-chip">85% <span class="score-bar"><span class="s-high" style="width:85%"></span></span></span></td>
+            </tr>
+            <tr>
+              <td><div class="qcell"><div class="thumb t4"></div><div class="info"><div class="name">L'âge d'or du jazz à Paris</div><div class="theme">Histoire · 10 Q</div></div></div></td>
+              <td class="hide-sm">12 mai · 21:34</td>
+              <td class="hide-sm mono" style="color:var(--muted)">03:51</td>
+              <td class="num-col"><span class="score-chip">90% <span class="score-bar"><span class="s-high" style="width:90%"></span></span></span></td>
+            </tr>
+            <tr>
+              <td><div class="qcell"><div class="thumb t5"></div><div class="info"><div class="name">Petite histoire du Web</div><div class="theme">Technologie · 18 Q</div></div></div></td>
+              <td class="hide-sm">10 mai · 16:08</td>
+              <td class="hide-sm mono" style="color:var(--muted)">07:19</td>
+              <td class="num-col"><span class="score-chip">61% <span class="score-bar"><span class="s-mid" style="width:61%"></span></span></span></td>
+            </tr>
+            <tr>
+              <td><div class="qcell"><div class="thumb t6"></div><div class="info"><div class="name">Les forêts primaires d'Europe</div><div class="theme">Écologie · 8 Q</div></div></div></td>
+              <td class="hide-sm">8 mai · 11:24</td>
+              <td class="hide-sm mono" style="color:var(--muted)">02:47</td>
+              <td class="num-col"><span class="score-chip">100% <span class="score-bar"><span class="s-high" style="width:100%"></span></span></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ============ DONUT ============ -->
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Répartition par thème</h3>
+            <p class="sub">Vos centres d'intérêt</p>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <div class="donut">
+            <svg viewBox="0 0 42 42">
+              <circle cx="21" cy="21" r="15.915" fill="white" stroke="#f5f5f7" stroke-width="3"/>
+              <!-- segments: stroke-dasharray "<filled> <rest>" -->
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#1d1d1f" stroke-width="3" stroke-dasharray="34 66" stroke-dashoffset="25"/>
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="oklch(58% 0.22 280)" stroke-width="3" stroke-dasharray="22 78" stroke-dashoffset="-9"/>
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="oklch(72% 0.16 60)" stroke-width="3" stroke-dasharray="18 82" stroke-dashoffset="-31"/>
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="oklch(70% 0.14 200)" stroke-width="3" stroke-dasharray="14 86" stroke-dashoffset="-49"/>
+              <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#d2d2d7" stroke-width="3" stroke-dasharray="12 88" stroke-dashoffset="-63"/>
+            </svg>
+            <div class="center"><div class="v">47</div><div class="l">quiz</div></div>
+          </div>
+          <div class="donut-legend">
+            <div class="dl-row">
+              <div class="left"><span class="swatch" style="background:#1d1d1f;"></span>Culture</div>
+              <span class="pct">34%</span>
+            </div>
+            <div class="dl-row">
+              <div class="left"><span class="swatch" style="background:oklch(58% 0.22 280);"></span>Sciences</div>
+              <span class="pct">22%</span>
+            </div>
+            <div class="dl-row">
+              <div class="left"><span class="swatch" style="background:oklch(72% 0.16 60);"></span>Lifestyle</div>
+              <span class="pct">18%</span>
+            </div>
+            <div class="dl-row">
+              <div class="left"><span class="swatch" style="background:oklch(70% 0.14 200);"></span>Histoire</div>
+              <span class="pct">14%</span>
+            </div>
+            <div class="dl-row">
+              <div class="left"><span class="swatch" style="background:#d2d2d7;"></span>Autres</div>
+              <span class="pct">12%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MY QUIZZES ============ -->
+    <div class="panel">
+      <div class="panel-head" style="margin-bottom:0;">
+        <div>
+          <h3>Mes quiz</h3>
+          <p class="sub">Créés, publiés, archivés</p>
+        </div>
+        <a href="#" class="btn btn-ghost" style="padding:8px 16px;font-size:14px;">+ Nouveau quiz</a>
+      </div>
+
+      <div class="tabs" id="qtabs">
+        <button class="active" data-tab="published">Publiés <span class="count">7</span></button>
+        <button data-tab="draft">Brouillons <span class="count">2</span></button>
+        <button data-tab="archived">Archivés <span class="count">5</span></button>
+      </div>
+
+      <!-- published -->
+      <div class="tab-panel active" data-panel="published" style="padding-top:24px;">
+        <div class="my-quiz">
+          <div class="mq-card">
+            <div class="mq-cover c1"><span class="status-pill published badge">Publié</span></div>
+            <div class="mq-body">
+              <h4>La Renaissance italienne</h4>
+              <div class="mq-meta"><span>14 Q</span><span>Histoire</span><span>Publié 12 mai</span></div>
+              <div class="mq-actions">
+                <span class="views">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  342 vues
+                </span>
+                <div class="icons">
+                  <button class="icon-btn" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+                  <button class="icon-btn" title="Archiver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mq-card">
+            <div class="mq-cover c2"><span class="status-pill published badge">Publié</span></div>
+            <div class="mq-body">
+              <h4>Le café, de l'Éthiopie à votre tasse</h4>
+              <div class="mq-meta"><span>10 Q</span><span>Lifestyle</span><span>Publié 5 mai</span></div>
+              <div class="mq-actions">
+                <span class="views">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  158 vues
+                </span>
+                <div class="icons">
+                  <button class="icon-btn" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+                  <button class="icon-btn" title="Archiver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mq-card">
+            <div class="mq-cover c3"><span class="status-pill published badge">Publié</span></div>
+            <div class="mq-body">
+              <h4>Les océans en péril</h4>
+              <div class="mq-meta"><span>16 Q</span><span>Écologie</span><span>Publié 28 avr.</span></div>
+              <div class="mq-actions">
+                <span class="views">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  624 vues
+                </span>
+                <div class="icons">
+                  <button class="icon-btn" title="Éditer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+                  <button class="icon-btn" title="Archiver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- drafts -->
+      <div class="tab-panel" data-panel="draft" style="padding-top:24px;">
+        <div class="my-quiz">
+          <div class="mq-card">
+            <div class="mq-cover c1" style="background:linear-gradient(135deg,#d2d2d7,#e8e8ed)"><span class="status-pill draft badge">Brouillon</span></div>
+            <div class="mq-body">
+              <h4>Le surréalisme belge</h4>
+              <div class="mq-meta"><span>8 Q</span><span>Art</span><span>Modifié hier</span></div>
+              <div class="mq-actions">
+                <span class="views" style="color:var(--accent-ink); font-weight:500;">Terminer la rédaction →</span>
+              </div>
+            </div>
+          </div>
+          <div class="mq-card">
+            <div class="mq-cover c2" style="background:linear-gradient(135deg,#d2d2d7,#e8e8ed)"><span class="status-pill draft badge">Brouillon</span></div>
+            <div class="mq-body">
+              <h4>L'architecture art déco</h4>
+              <div class="mq-meta"><span>12 Q</span><span>Architecture</span><span>Créé 3 mai</span></div>
+              <div class="mq-actions">
+                <span class="views" style="color:var(--accent-ink); font-weight:500;">Terminer la rédaction →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- archived -->
+      <div class="tab-panel" data-panel="archived" style="padding-top:24px;">
+        <div class="my-quiz">
+          <div class="mq-card" style="opacity:0.72;">
+            <div class="mq-cover c3" style="filter:grayscale(0.6);"><span class="status-pill archived badge">Archivé</span></div>
+            <div class="mq-body">
+              <h4>Anciens héros mythologiques</h4>
+              <div class="mq-meta"><span>20 Q</span><span>Mythologie</span><span>Archivé 18 mars</span></div>
+              <div class="mq-actions">
+                <span class="views">182 vues à vie</span>
+                <div class="icons">
+                  <button class="icon-btn" title="Restaurer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+                  <button class="icon-btn" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mq-card" style="opacity:0.72;">
+            <div class="mq-cover c1" style="filter:grayscale(0.6);"><span class="status-pill archived badge">Archivé</span></div>
+            <div class="mq-body">
+              <h4>Les championnats d'Europe 2024</h4>
+              <div class="mq-meta"><span>15 Q</span><span>Sport</span><span>Archivé 2 mars</span></div>
+              <div class="mq-actions">
+                <span class="views">428 vues à vie</span>
+                <div class="icons">
+                  <button class="icon-btn" title="Restaurer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+                  <button class="icon-btn" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mq-card" style="opacity:0.72;">
+            <div class="mq-cover c2" style="filter:grayscale(0.6);"><span class="status-pill archived badge">Archivé</span></div>
+            <div class="mq-body">
+              <h4>Le jardinage en pots</h4>
+              <div class="mq-meta"><span>10 Q</span><span>Lifestyle</span><span>Archivé 14 fév.</span></div>
+              <div class="mq-actions">
+                <span class="views">91 vues à vie</span>
+                <div class="icons">
+                  <button class="icon-btn" title="Restaurer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+                  <button class="icon-btn" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>© 2026 Quizia · Conçu pour le hackathon Transformation Numérique</div>
+      <div class="footer-links">
+        <a href="index.html">Découvrir</a>
+        <a href="stats.html">Statistiques</a>
+        <a href="login.html">Déconnexion</a>
+      </div>
+    </div>
+  </footer>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    // ============================================================
+    // Chart — score over 30 days
+    // ============================================================
+    function rng(seed) { return function() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }; }
+    const rand = rng(42);
+
+    const DAYS = 30;
+    const scores = [];
+    const completions = [];
+    let s = 76;
+    for (let i = 0; i < DAYS; i++) {
+      s = Math.max(58, Math.min(98, s + (rand() - 0.45) * 9));
+      scores.push(Math.round(s));
+      completions.push(Math.round(1 + rand() * 4));
+    }
+    // bump trend up to match KPI
+    for (let i = DAYS - 6; i < DAYS; i++) scores[i] = Math.min(96, scores[i] + 4);
+
+    const W = 1000, H = 320;
+    const PAD_L = 40, PAD_R = 20, PAD_T = 40, PAD_B = 40;
+    const innerW = W - PAD_L - PAD_R;
+    const innerH = H - PAD_T - PAD_B;
+    const stepX = innerW / (DAYS - 1);
+
+    function xAt(i) { return PAD_L + i * stepX; }
+    function yAt(v) { return PAD_T + (1 - v / 100) * innerH; }
+
+    // Build path
+    let d = '';
+    scores.forEach((v, i) => {
+      const x = xAt(i), y = yAt(v);
+      d += (i === 0 ? `M${x},${y}` : ` L${x},${y}`);
+    });
+    document.getElementById('score-line').setAttribute('d', d);
+    document.getElementById('score-area').setAttribute('d',
+      d + ` L${xAt(DAYS-1)},${H - PAD_B} L${xAt(0)},${H - PAD_B} Z`
+    );
+
+    // Bars (completions)
+    const bars = document.getElementById('bars');
+    const maxC = Math.max(...completions);
+    completions.forEach((c, i) => {
+      const x = xAt(i) - 3;
+      const h = (c / maxC) * 28;
+      const y = H - PAD_B - h - 2;
+      const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      r.setAttribute('x', x); r.setAttribute('y', y);
+      r.setAttribute('width', 6); r.setAttribute('height', h);
+      r.setAttribute('rx', 2);
+      r.setAttribute('fill', 'oklch(58% 0.22 280)');
+      r.setAttribute('opacity', '0.85');
+      bars.appendChild(r);
+    });
+
+    // Dots
+    const dotsG = document.getElementById('dots');
+    scores.forEach((v, i) => {
+      if (i % 5 !== 4) return;
+      const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', xAt(i)); c.setAttribute('cy', yAt(v));
+      c.setAttribute('r', 3.2);
+      c.setAttribute('fill', 'white');
+      c.setAttribute('stroke', '#1d1d1f');
+      c.setAttribute('stroke-width', '2');
+      dotsG.appendChild(c);
+    });
+
+    // X labels (every 5 days)
+    const today = new Date('2026-05-16');
+    const xLabels = document.getElementById('x-labels');
+    for (let i = 0; i < DAYS; i += 5) {
+      const dayOffset = DAYS - 1 - i;
+      const d = new Date(today); d.setDate(d.getDate() - dayOffset);
+      const lbl = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', xAt(i)); t.setAttribute('y', H - 12);
+      t.setAttribute('text-anchor', 'middle');
+      t.textContent = lbl;
+      xLabels.appendChild(t);
+    }
+
+    // Hover interaction
+    const overlay = document.getElementById('chart-overlay');
+    const hover = document.getElementById('hover');
+    const hoverLine = document.getElementById('hover-line');
+    const hoverDot = document.getElementById('hover-dot');
+    const hoverTip = document.getElementById('hover-tip');
+    const hoverScore = document.getElementById('hover-score');
+    const hoverDate = document.getElementById('hover-date');
+    const chart = document.getElementById('chart');
+
+    overlay.addEventListener('mousemove', (e) => {
+      const rect = chart.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      const i = Math.max(0, Math.min(DAYS - 1, Math.round((x - PAD_L) / stepX)));
+      const xx = xAt(i), yy = yAt(scores[i]);
+      hover.setAttribute('opacity', '1');
+      hoverLine.setAttribute('x1', xx); hoverLine.setAttribute('x2', xx);
+      hoverDot.setAttribute('cx', xx); hoverDot.setAttribute('cy', yy);
+      const tipX = Math.max(64, Math.min(W - 64, xx));
+      hoverTip.setAttribute('transform', `translate(${tipX},${yy})`);
+      hoverScore.textContent = scores[i] + '% · ' + completions[i] + ' quiz';
+      const d = new Date(today); d.setDate(d.getDate() - (DAYS - 1 - i));
+      hoverDate.textContent = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    });
+    overlay.addEventListener('mouseleave', () => hover.setAttribute('opacity', '0'));
+
+    // ============================================================
+    // Range picker — just visual feedback
+    // ============================================================
+    document.getElementById('range').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      document.querySelectorAll('#range button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+
+    // ============================================================
+    // Tabs
+    // ============================================================
+    document.getElementById('qtabs').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      const t = b.dataset.tab;
+      document.querySelectorAll('#qtabs button').forEach(x => x.classList.toggle('active', x === b));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === t));
+    });
+
+    // ============================================================
+    // Logout
+    // ============================================================
+    document.getElementById('logout').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = 'login.html';
+    });
+  </script>
+
+</body>
+</html>
