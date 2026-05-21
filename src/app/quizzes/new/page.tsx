@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { NewQuizForm } from './new-quiz-form';
+import { CreationSwitcher } from './creation-switcher';
 
 export default async function NewQuizPage() {
   const supabase = await createClient();
@@ -21,11 +21,11 @@ export default async function NewQuizPage() {
           Nouveau quiz
         </h1>
         <p className="text-muted text-[17px] max-w-[560px]">
-          Décrivez le quiz que vous souhaitez créer. L&apos;intelligence artificielle générera les questions pour vous.
+          Créez votre quiz manuellement ou laissez l&apos;intelligence artificielle le générer à partir d&apos;une simple description.
         </p>
       </div>
 
-      <NewQuizForm />
+      <CreationSwitcher />
     </main>
   );
 }

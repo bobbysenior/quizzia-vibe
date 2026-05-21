@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export function NewQuizForm() {
+export function PromptForm() {
   const [prompt, setPrompt] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -30,7 +30,7 @@ export function NewQuizForm() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <label htmlFor="prompt" className="text-[13px] font-medium text-ink-2">
-            Votre prompt
+            Décrivez le quiz souhaité *
           </label>
           <textarea
             id="prompt"
