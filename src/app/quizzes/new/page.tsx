@@ -1,15 +1,7 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { CreationSwitcher } from './creation-switcher';
+import { AuthGate } from './auth-gate';
 
-export default async function NewQuizPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect('/login');
-
+export default function NewQuizPage() {
   return (
     <main className="py-12 px-8 max-w-[1200px] mx-auto max-sm:py-8 max-sm:px-5">
       <div className="mb-10">
@@ -25,7 +17,9 @@ export default async function NewQuizPage() {
         </p>
       </div>
 
-      <CreationSwitcher />
+      <AuthGate>
+        <CreationSwitcher />
+      </AuthGate>
     </main>
   );
 }

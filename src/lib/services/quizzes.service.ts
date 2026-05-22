@@ -128,6 +128,138 @@ export async function listQuizzes(): Promise<Quiz[]> {
   return data;
 }
 
+export async function updateQuiz(
+  quizId: string,
+  input: { title?: string; theme?: string }
+): Promise<Quiz> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error('Non autorisé.');
+
+  const { data, error } = await supabase
+    .from('quizzes')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', quizId)
+    .eq('creator_id', user.id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function upsertQuestion(
+  quizId: string,
+  question: { id?: string; question_text: string; order_index: number }
+): Promise<{ id: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  if (question.id) {
+    const { data, error } = await supabase
+      .from('questions')
+      .update({ question_text: question.question_text })
+      .eq('id', question.id)
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from('questions')
+    .insert({ quiz_id: quizId, question_text: question.question_text, order_index: question.order_index })
+    .select('id')
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteQuestion(questionId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  const { error } = await supabase
+    .from('questions')
+    .delete()
+    .eq('id', questionId);
+  if (error) throw new Error(error.message);
+}
+
+export async function upsertChoice(
+  questionId: string,
+  choice: { id?: string; choice_text: string; is_correct: boolean; order_index: number }
+): Promise<{ id: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  if (choice.id) {
+    const { data, error } = await supabase
+      .from('choices')
+      .update({ choice_text: choice.choice_text, is_correct: choice.is_correct })
+      .eq('id', choice.id)
+      .select('id')
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  const { data, error } = await supabase
+    .from('choices')
+    .insert({
+      question_id: questionId,
+      choice_text: choice.choice_text,
+      is_correct: choice.is_correct,
+      order_index: choice.order_index,
+    })
+    .select('id')
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteChoice(choiceId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  const { error } = await supabase
+    .from('choices')
+    .delete()
+    .eq('id', choiceId);
+  if (error) throw new Error(error.message);
+}
+
+export async function setCorrectChoice(questionId: string, choiceId: string): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  await supabase.from('choices').update({ is_correct: false }).eq('question_id', questionId);
+  const { error } = await supabase
+    .from('choices')
+    .update({ is_correct: true })
+    .eq('id', choiceId)
+    .eq('question_id', questionId);
+  if (error) throw new Error(error.message);
+}
+
 // ---------------------------------------------------------------
 // Play functions
 // ---------------------------------------------------------------
@@ -244,6 +376,43 @@ export async function completeAttempt(
   if (updateError) throw new Error(updateError.message);
 
   return { score, total };
+}
+
+export interface QuizQuestionWithChoices {
+  id: string;
+  question_text: string;
+  order_index: number;
+  choices: { id: string; choice_text: string; is_correct: boolean; order_index: number }[];
+}
+
+export async function getQuizForEdit(
+  quizId: string,
+  userId: string
+): Promise<{ quiz: Quiz; questions: QuizQuestionWithChoices[] } | null> {
+  const supabase = await createClient();
+
+  const { data: quiz, error: quizError } = await supabase
+    .from('quizzes')
+    .select('*')
+    .eq('id', quizId)
+    .eq('creator_id', userId)
+    .single();
+
+  if (quizError) {
+    if (quizError.code === 'PGRST116') return null;
+    throw new Error(quizError.message);
+  }
+
+  const { data: questions, error: questionsError } = await supabase
+    .from('questions')
+    .select('id, question_text, order_index, choices(id, choice_text, is_correct, order_index)')
+    .eq('quiz_id', quizId)
+    .order('order_index', { ascending: true })
+    .order('order_index', { referencedTable: 'choices', ascending: true });
+
+  if (questionsError) throw new Error(questionsError.message);
+
+  return { quiz, questions: (questions ?? []) as unknown as QuizQuestionWithChoices[] };
 }
 
 export async function getQuizById(id: string): Promise<QuizWithCount | null> {
