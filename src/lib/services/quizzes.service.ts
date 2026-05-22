@@ -29,7 +29,7 @@ export interface QuizAttempt {
   score: number;
   total_questions: number;
   completed_at: string;
-  quizzes: { title: string; theme: string }[] | null;
+  quizzes: { title: string; theme: string } | null;
 }
 
 export async function getUserStats(): Promise<UserStats | null> {
@@ -94,7 +94,7 @@ export async function getUserAttempts(limit = 6): Promise<QuizAttempt[]> {
     .limit(limit);
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as QuizAttempt[];
+  return (data ?? []) as unknown as QuizAttempt[];
 }
 
 export async function getUserQuizzes(): Promise<Quiz[]> {
