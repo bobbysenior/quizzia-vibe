@@ -18,7 +18,7 @@ export default async function QuizzesPage() {
       <div className="mb-10">
         <div className="font-mono text-xs font-medium tracking-[0.06em] uppercase text-muted mb-3.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent mr-2 align-middle" />
-          Bibliothèque publique
+          Catalogue public
         </div>
         <h1 className="text-[clamp(32px,4.4vw,48px)] font-semibold tracking-[-0.035em] leading-[1.05] mb-3">
           Tous les quiz disponibles

@@ -21,44 +21,50 @@ export default function Nav({ userEmail }: Props) {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-bg/80 border-b border-line-2">
       <div className="max-w-[1200px] mx-auto px-8 h-14 flex items-center justify-between">
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-semibold text-[17px] tracking-[-0.02em]">
           <span className="w-[22px] h-[22px] rounded-md bg-ink relative overflow-hidden after:absolute after:inset-1 after:rounded-[3px] after:bg-[linear-gradient(135deg,var(--color-accent),oklch(70%_0.2_320))]" />
           Quizia
         </Link>
 
+        {/* Centre — navigation */}
         <nav className="flex items-center gap-1">
-          <Link href="/" className={linkClass('/')}>Découvrir</Link>
-          <Link href="/#bibliotheque" className={linkClass('/#bibliotheque')}>Bibliothèque</Link>
+          {!userEmail && <Link href="/" className={linkClass('/')}>Découvrir</Link>}
           {userEmail && (
-            <Link href="/stats" className={linkClass('/stats')}>Statistiques</Link>
+            <>
+              <Link href="/dashboard" className={linkClass('/dashboard')}>Tableau de bord</Link>
+              <Link href="/my-quizzes" className={linkClass('/my-quizzes')}>Mes quiz</Link>
+            </>
           )}
-          {userEmail ? (
-            <button
-              onClick={() => signOut()}
-              className="text-sm text-ink-2 px-3.5 py-2 rounded-full hover:bg-bg-soft hover:text-ink transition-colors"
-            >
-              Déconnexion
-            </button>
-          ) : (
-            <Link href="/login" className={linkClass('/login')}>Se connecter</Link>
-          )}
+          <Link href="/quizzes" className={linkClass('/quizzes')}>Catalogue</Link>
         </nav>
 
-        {userEmail ? (
-          <Link
-            href="/quizzes/new"
-            className="text-sm font-medium px-4 py-2 rounded-full bg-ink text-white hover:opacity-90 transition"
-          >
-            + Nouveau quiz
-          </Link>
-        ) : (
-          <Link
-            href="/login"
-            className="text-sm font-medium px-4 py-2 rounded-full bg-ink text-white hover:opacity-90 transition"
-          >
-            Créer un quiz
-          </Link>
-        )}
+        {/* Droite — actions */}
+        <div className="flex items-center gap-2">
+          {userEmail ? (
+            <>
+              <Link
+                href="/quizzes/new"
+                className="text-sm font-medium px-4 py-2 rounded-full bg-ink text-white hover:opacity-90 transition"
+              >
+                + Nouveau quiz
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="text-sm text-bad px-3.5 py-2 rounded-full border border-bad/20 bg-[oklch(96%_0.05_25)] hover:bg-[oklch(94%_0.06_25)] transition-colors"
+              >
+                Déconnexion
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm font-medium px-4 py-2 rounded-full bg-ink text-white hover:opacity-90 transition"
+            >
+              Se connecter
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

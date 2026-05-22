@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { listQuizzes } from '@/lib/services/quizzes.service';
 
 function Marquee() {
@@ -84,6 +86,13 @@ const themeGradients = [
 ];
 
 export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect('/dashboard');
+  }
+
   const quizzes = await listQuizzes();
 
   return (
@@ -194,7 +203,7 @@ export default async function Home() {
             <div>
               <div className="font-mono text-xs font-medium tracking-[0.06em] uppercase text-muted mb-3.5">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent mr-2 align-middle" />
-                Bibliothèque publique
+                Catalogue public
               </div>
               <h2 className="text-[clamp(28px,3.4vw,44px)] font-semibold tracking-[-0.028em] leading-[1.08]">
                 Des centaines de quiz, prêts à jouer.
@@ -261,7 +270,7 @@ export default async function Home() {
                 Créer mon compte <span>→</span>
               </Link>
               <Link
-                href="/stats"
+                href="/dashboard"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/25 text-white text-base font-medium hover:bg-white/10 hover:border-white transition"
               >
                 Voir un exemple de tableau de bord

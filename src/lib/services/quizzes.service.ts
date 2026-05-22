@@ -506,3 +506,31 @@ export async function createEmptyQuestions(quizId: string, count: number): Promi
   const { error: cError } = await supabase.from('choices').insert(choiceRows);
   if (cError) throw new Error(cError.message);
 }
+
+export async function updateQuizStatus(quizId: string, status: QuizStatus): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  const { error } = await supabase
+    .from('quizzes')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', quizId)
+    .eq('creator_id', user.id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteQuiz(quizId: string): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  const { error } = await supabase
+    .from('quizzes')
+    .delete()
+    .eq('id', quizId)
+    .eq('creator_id', user.id);
+
+  if (error) throw new Error(error.message);
+}
