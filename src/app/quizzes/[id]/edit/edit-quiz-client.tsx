@@ -26,7 +26,13 @@ export function EditQuizClient({ quizId }: { quizId: string }) {
     });
   }, [quizId]);
 
-  if (state.status === 'loading') {
+  useEffect(() => {
+    if (state.status === 'notFound') {
+      router.replace('/quizzes');
+    }
+  }, [state.status, router]);
+
+  if (state.status === 'notFound' || state.status === 'loading') {
     return (
       <main className="py-12 px-8 max-w-[1200px] mx-auto max-sm:py-8 max-sm:px-5">
         <div className="bg-bg-elev border border-line-2 rounded-[22px] p-10 text-center">
@@ -34,11 +40,6 @@ export function EditQuizClient({ quizId }: { quizId: string }) {
         </div>
       </main>
     );
-  }
-
-  if (state.status === 'notFound') {
-    router.replace('/quizzes');
-    return null;
   }
 
   return <QuizEditor quiz={state.quiz!} questions={state.questions!} />;

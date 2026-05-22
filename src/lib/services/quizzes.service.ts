@@ -469,3 +469,40 @@ export async function createQuiz(input: CreateQuizInput): Promise<Quiz> {
   if (error) throw new Error(error.message);
   return data;
 }
+
+export async function createEmptyQuestions(quizId: string, count: number): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Non autorisé.');
+
+  const questionRows = Array.from({ length: count }, (_, i) => ({
+    quiz_id: quizId,
+    question_text: 'Nouvelle question',
+    order_index: i + 1,
+  }));
+
+  const { data: questions, error: qError } = await supabase
+    .from('questions')
+    .insert(questionRows)
+    .select('id');
+
+  if (qError) throw new Error(qError.message);
+  if (!questions || questions.length !== count) {
+    throw new Error('Échec de création des questions.');
+  }
+
+  const LABELS = ['Choix A', 'Choix B', 'Choix C', 'Choix D'];
+  const choiceRows = questions.flatMap((q) =>
+    LABELS.map((label, ci) => ({
+      question_id: q.id,
+      choice_text: label,
+      is_correct: false,
+      order_index: ci,
+    }))
+  );
+
+  const { error: cError } = await supabase.from('choices').insert(choiceRows);
+  if (cError) throw new Error(cError.message);
+}

@@ -1,7 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
-import { createQuiz } from '@/lib/services/quizzes.service';
+import { createQuiz, createEmptyQuestions } from '@/lib/services/quizzes.service';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
@@ -53,6 +52,8 @@ export async function createQuizAction(_prevState: unknown, formData: FormData) 
       theme: parsed.data.theme,
       question_count: parsed.data.question_count,
     });
+
+    await createEmptyQuestions(quiz.id, parsed.data.question_count);
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Erreur lors de la création du quiz.';
     return { error: message };
@@ -71,6 +72,7 @@ import {
   deleteChoice,
   setCorrectChoice,
 } from '@/lib/services/quizzes.service';
+import { createClient } from '@/lib/supabase/server';
 
 export async function updateQuizTitle(
   quizId: string,
@@ -163,6 +165,89 @@ export async function setCorrectChoiceAction(_prevState: unknown, formData: Form
 
   try {
     await setCorrectChoice(questionId, choiceId);
+    return { success: true };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Erreur.';
+    return { error: message };
+  }
+}
+
+interface ChoiceInput {
+  choice_text: string;
+  is_correct: boolean;
+  order_index: number;
+}
+
+interface QuestionInput {
+  question_text: string;
+  order_index: number;
+  choices: ChoiceInput[];
+}
+
+export async function saveFullQuizAction(
+  quizId: string,
+  _prevState: unknown,
+  formData: FormData
+) {
+  const title = formData.get('title') as string;
+  const theme = formData.get('theme') as string;
+  const questionsJson = formData.get('questions') as string;
+
+  if (!title?.trim() || !theme?.trim()) return { error: 'Titre et thème sont obligatoires.' };
+
+  let questions: QuestionInput[] = [];
+  try {
+    questions = JSON.parse(questionsJson || '[]');
+  } catch {
+    return { error: 'Données des questions invalides.' };
+  }
+
+  const filtered = questions.filter((q) => q.question_text.trim());
+  if (filtered.length < 1) return { error: 'Au moins une question est obligatoire.' };
+
+  try {
+    const supabase = await createClient();
+
+    await supabase
+      .from('quizzes')
+      .update({ title: title.trim(), theme: theme.trim(), question_count: filtered.length, updated_at: new Date().toISOString() })
+      .eq('id', quizId);
+
+    await supabase.from('questions').delete().eq('quiz_id', quizId);
+
+    const questionRows = filtered.map((q, i) => ({
+      quiz_id: quizId,
+      question_text: q.question_text.trim(),
+      order_index: i + 1,
+    }));
+
+    const { data: created, error: qError } = await supabase
+      .from('questions')
+      .insert(questionRows)
+      .select('id');
+
+    if (qError) throw new Error(qError.message);
+    if (!created || created.length !== filtered.length) {
+      throw new Error('Échec de création des questions.');
+    }
+
+    const allChoiceRows = created.flatMap((q, qi) => {
+      const input = filtered[qi];
+      return input.choices
+        .filter((c) => c.choice_text.trim())
+        .map((c, ci) => ({
+          question_id: q.id,
+          choice_text: c.choice_text.trim(),
+          is_correct: c.is_correct,
+          order_index: ci,
+        }));
+    });
+
+    if (allChoiceRows.length > 0) {
+      const { error: cError } = await supabase.from('choices').insert(allChoiceRows);
+      if (cError) throw new Error(cError.message);
+    }
+
     return { success: true };
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Erreur.';

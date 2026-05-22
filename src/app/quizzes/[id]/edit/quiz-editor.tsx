@@ -1,16 +1,9 @@
 'use client';
 
-import { useState, useActionState } from 'react';
+import { useState, useCallback } from 'react';
 import type { Quiz } from '@/lib/types';
 import type { QuizQuestionWithChoices } from '@/lib/services/quizzes.service';
-import {
-  updateQuizTitle,
-  saveQuestionAction,
-  deleteQuestionAction,
-  saveChoiceAction,
-  deleteChoiceAction,
-  setCorrectChoiceAction,
-} from '@/lib/quiz/actions';
+import { saveFullQuizAction } from '@/lib/quiz/actions';
 import Link from 'next/link';
 
 interface Props {
@@ -19,11 +12,11 @@ interface Props {
 }
 
 export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
+  const [title, setTitle] = useState(quiz.title);
+  const [theme, setTheme] = useState(quiz.theme);
   const [questions, setQuestions] = useState(initialQuestions);
-  const [titleState, titleAction] = useActionState(
-    updateQuizTitle.bind(null, quiz.id),
-    null
-  );
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const addQuestion = () => {
     const maxOrder = questions.reduce((m, q) => Math.max(m, q.order_index), 0);
@@ -55,6 +48,7 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
     setQuestions((prev) =>
       prev.map((q, i) => {
         if (i !== qIdx) return q;
+        if (q.choices.length >= 4) return q;
         const maxOrder = q.choices.reduce((m, c) => Math.max(m, c.order_index), 0);
         return {
           ...q,
@@ -97,6 +91,27 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
     );
   };
 
+  const handleSaveAll = useCallback(async () => {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const fd = new FormData();
+      fd.set('title', title);
+      fd.set('theme', theme);
+      fd.set('questions', JSON.stringify(questions));
+      const result = await saveFullQuizAction(quiz.id, null, fd);
+      if (result?.error) {
+        setFeedback(result.error);
+      } else {
+        setFeedback('Quiz enregistré.');
+      }
+    } catch {
+      setFeedback("Erreur lors de l'enregistrement.");
+    } finally {
+      setSaving(false);
+    }
+  }, [title, theme, questions, quiz.id]);
+
   return (
     <main className="py-12 px-8 max-w-[1200px] mx-auto max-sm:py-8 max-sm:px-5">
       <Link
@@ -115,26 +130,32 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
           Modifier le quiz
         </h1>
 
-        <form action={titleAction} className="flex flex-col sm:flex-row gap-3 max-w-[680px]">
-          <input
-            name="title"
-            defaultValue={quiz.title}
-            className="flex-1 bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition"
-          />
-          <input
-            name="theme"
-            defaultValue={quiz.theme}
-            className="w-[180px] bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition"
-          />
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-line text-sm font-medium text-ink hover:bg-bg-soft hover:border-ink transition"
-          >
-            Enregistrer
-          </button>
-          {titleState?.error && <p className="text-sm text-bad">{titleState.error}</p>}
-          {titleState?.success && <p className="text-sm text-good">Enregistré.</p>}
-        </form>
+        <div className="flex flex-col sm:flex-row gap-3 max-w-[680px]">
+          <div className="flex-1 flex flex-col gap-1">
+            <label htmlFor="quiz-title" className="text-[11px] font-mono font-medium tracking-[0.04em] uppercase text-muted">
+              Titre
+            </label>
+            <input
+              id="quiz-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex : Les grandes découvertes scientifiques"
+              className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
+            />
+          </div>
+          <div className="w-[180px] flex flex-col gap-1">
+            <label htmlFor="quiz-theme" className="text-[11px] font-mono font-medium tracking-[0.04em] uppercase text-muted">
+              Thème
+            </label>
+            <input
+              id="quiz-theme"
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              placeholder="Ex : Sciences"
+              className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-6">
@@ -143,7 +164,6 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
             key={q.id || `new-${qIdx}`}
             question={q}
             qIdx={qIdx}
-            quizId={quiz.id}
             onRemove={() => removeQuestionLocal(qIdx)}
             onTextChange={(text) => updateQuestionText(qIdx, text)}
             onAddChoice={() => addChoice(qIdx)}
@@ -154,13 +174,25 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
         ))}
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <button
           onClick={addQuestion}
           className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-line text-base font-medium text-ink hover:bg-bg-soft hover:border-ink transition"
         >
           + Ajouter une question
         </button>
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink text-white text-base font-medium hover:bg-ink/90 transition disabled:opacity-60"
+        >
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+        {feedback && (
+          <p className={`text-sm ${feedback.includes('Erreur') ? 'text-bad' : 'text-good'}`}>
+            {feedback}
+          </p>
+        )}
       </div>
     </main>
   );
@@ -169,7 +201,6 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
 interface QuestionEditorProps {
   question: QuizQuestionWithChoices & { id: string };
   qIdx: number;
-  quizId: string;
   onRemove: () => void;
   onTextChange: (text: string) => void;
   onAddChoice: () => void;
@@ -181,7 +212,6 @@ interface QuestionEditorProps {
 function QuestionEditor({
   question,
   qIdx,
-  quizId,
   onRemove,
   onTextChange,
   onAddChoice,
@@ -189,9 +219,6 @@ function QuestionEditor({
   onSetCorrect,
   onRemoveChoice,
 }: QuestionEditorProps) {
-  const [qState, qAction] = useActionState(saveQuestionAction.bind(null, quizId), null);
-  const [deleteState, deleteAction] = useActionState(deleteQuestionAction, null);
-
   return (
     <div className="bg-bg-elev border border-line-2 rounded-[22px] p-6">
       <div className="flex items-center gap-3 mb-4">
@@ -199,47 +226,28 @@ function QuestionEditor({
           {qIdx + 1}
         </span>
         <span className="text-[13px] font-medium text-ink-2">Question</span>
-        <div className="ml-auto flex gap-2">
-          {question.id && (
-            <form action={deleteAction}>
-              <input type="hidden" name="id" value={question.id} />
-              <button
-                type="submit"
-                className="text-xs text-muted font-mono px-2.5 py-1.5 rounded-lg hover:bg-[oklch(96%_0.05_25)] hover:text-bad transition"
-              >
-                Supprimer
-              </button>
-            </form>
-          )}
+        <div className="ml-auto">
+          <button
+            onClick={onRemove}
+            className="text-xs text-muted font-mono px-2.5 py-1.5 rounded-lg hover:bg-[oklch(96%_0.05_25)] hover:text-bad transition"
+          >
+            Supprimer
+          </button>
         </div>
       </div>
 
-      <form action={qAction} className="flex flex-col gap-4">
-        <input type="hidden" name="order_index" value={question.order_index} />
-        {question.id && <input type="hidden" name="id" value={question.id} />}
-        <input
-          name="question_text"
-          value={question.question_text}
-          onChange={(e) => onTextChange(e.target.value)}
-          placeholder="Écrivez la question…"
-          className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
-        />
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            className="text-xs font-medium text-accent-ink hover:underline underline-offset-[3px]"
-          >
-            Enregistrer la question
-          </button>
-          {qState?.error && <p className="text-sm text-bad">{qState.error}</p>}
-        </div>
-      </form>
+      <input
+        value={question.question_text}
+        onChange={(e) => onTextChange(e.target.value)}
+        placeholder="Écrivez la question…"
+        className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
+      />
 
       <div className="mt-5 pt-5 border-t border-line-2">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[13px] font-medium text-ink-2">Choix</span>
           <span className="text-[11px] text-muted font-mono">
-            {question.choices.filter((c) => c.is_correct).length} correct(s)
+            {question.choices.filter((c) => c.is_correct).length} / {question.choices.length} correct(s)
           </span>
         </div>
         <div className="flex flex-col gap-2">
@@ -247,8 +255,6 @@ function QuestionEditor({
             <ChoiceRow
               key={c.id || `newc-${cIdx}`}
               choice={c}
-              questionId={question.id}
-              questionIdx={qIdx}
               choiceIdx={cIdx}
               onTextChange={(text) => onChoiceTextChange(cIdx, text)}
               onSetCorrect={() => onSetCorrect(cIdx)}
@@ -256,12 +262,14 @@ function QuestionEditor({
             />
           ))}
         </div>
-        <button
-          onClick={onAddChoice}
-          className="mt-3 text-xs font-medium text-accent-ink hover:underline underline-offset-[3px]"
-        >
-          + Ajouter un choix
-        </button>
+        {question.choices.length < 4 && (
+          <button
+            onClick={onAddChoice}
+            className="mt-3 text-xs font-medium text-accent-ink hover:underline underline-offset-[3px]"
+          >
+            + Ajouter un choix
+          </button>
+        )}
       </div>
     </div>
   );
@@ -269,8 +277,6 @@ function QuestionEditor({
 
 interface ChoiceRowProps {
   choice: { id: string; choice_text: string; is_correct: boolean; order_index: number };
-  questionId: string;
-  questionIdx: number;
   choiceIdx: number;
   onTextChange: (text: string) => void;
   onSetCorrect: () => void;
@@ -279,17 +285,11 @@ interface ChoiceRowProps {
 
 function ChoiceRow({
   choice,
-  questionId,
-  questionIdx,
   choiceIdx,
   onTextChange,
   onSetCorrect,
   onRemove,
 }: ChoiceRowProps) {
-  const [cState, cAction] = useActionState(saveChoiceAction.bind(null, questionId), null);
-  const [deleteState, deleteAction] = useActionState(deleteChoiceAction, null);
-  const [correctState, correctAction] = useActionState(setCorrectChoiceAction, null);
-
   const letter = String.fromCharCode(65 + choiceIdx);
 
   return (
@@ -301,50 +301,28 @@ function ChoiceRow({
       >
         {letter}
       </span>
-      <form action={cAction} className="flex-1 flex items-center gap-2">
-        <input type="hidden" name="order_index" value={choice.order_index} />
-        {choice.id && <input type="hidden" name="id" value={choice.id} />}
-        <input
-          name="choice_text"
-          value={choice.choice_text}
-          onChange={(e) => onTextChange(e.target.value)}
-          placeholder="Texte du choix…"
-          className="flex-1 bg-transparent border-b border-line-2 py-1.5 px-1 text-[15px] outline-none focus:border-ink transition"
-        />
-        <button
-          type="submit"
-          className="text-[11px] font-mono text-muted hover:text-ink transition shrink-0"
-        >
-          ✓
-        </button>
-      </form>
-      {choice.id && (
-        <form action={correctAction}>
-          <input type="hidden" name="question_id" value={questionId} />
-          <input type="hidden" name="choice_id" value={choice.id} />
-          <button
-            type="submit"
-            className={`text-[11px] font-mono px-2 py-1 rounded-md transition shrink-0 ${
-              choice.is_correct
-                ? 'bg-good/10 text-good'
-                : 'text-muted hover:bg-bg-soft hover:text-ink'
-            }`}
-          >
-            {choice.is_correct ? 'Correct' : 'Marquer correct'}
-          </button>
-        </form>
-      )}
-      {choice.id && (
-        <form action={deleteAction}>
-          <input type="hidden" name="id" value={choice.id} />
-          <button
-            type="submit"
-            className="text-[11px] font-mono text-muted hover:text-bad transition shrink-0 px-1"
-          >
-            ✕
-          </button>
-        </form>
-      )}
+      <input
+        value={choice.choice_text}
+        onChange={(e) => onTextChange(e.target.value)}
+        placeholder="Texte du choix…"
+        className="flex-1 bg-transparent border-b border-line-2 py-1.5 px-1 text-[15px] outline-none focus:border-ink transition"
+      />
+      <button
+        onClick={onSetCorrect}
+        className={`text-[11px] font-mono px-2 py-1 rounded-md transition shrink-0 ${
+          choice.is_correct
+            ? 'bg-good/10 text-good'
+            : 'text-muted hover:bg-bg-soft hover:text-ink'
+        }`}
+      >
+        {choice.is_correct ? 'Correct' : 'Marquer correct'}
+      </button>
+      <button
+        onClick={onRemove}
+        className="text-[11px] font-mono text-muted hover:text-bad transition shrink-0 px-1"
+      >
+        ✕
+      </button>
     </div>
   );
 }
