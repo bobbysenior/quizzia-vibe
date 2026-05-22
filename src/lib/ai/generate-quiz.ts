@@ -91,5 +91,21 @@ Description du quiz souhaité : ${prompt}`;
     throw new Error(`Le JSON généré ne respecte pas le format attendu : ${errors}`);
   }
 
-  return result.data;
+  // Le LLM a tendance à placer la bonne réponse en A ou B : on mélange.
+  return {
+    ...result.data,
+    questions: result.data.questions.map((q) => ({
+      ...q,
+      choices: shuffle(q.choices),
+    })),
+  };
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
