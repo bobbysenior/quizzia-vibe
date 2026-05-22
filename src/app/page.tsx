@@ -117,7 +117,7 @@ export default async function Home() {
               Commencer <span className="transition-transform group-hover:translate-x-1">→</span>
             </Link>
             <Link
-              href="#bibliotheque"
+              href="/quizzes"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-line text-ink text-base font-medium hover:bg-bg-soft hover:border-ink transition"
             >
               Parcourir les quiz
