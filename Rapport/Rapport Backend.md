@@ -69,6 +69,8 @@ erDiagram
     CHOICES ||--o{ USER_ANSWERS : "est sélectionné"
 ```
 
+> **Description du schéma** — Ce diagramme Entité-Relation montre la **structure relationnelle complète** de la base de données. Il représente les 6 entités principales (`AUTH_USERS` du système Supabase, plus nos 5 tables métier) et leurs cardinalités. On y voit que : un utilisateur peut créer plusieurs quiz (`||--o{`), un quiz contient plusieurs questions, une question propose plusieurs choix, une tentative regroupe plusieurs réponses, etc. Les clés primaires (PK) et étrangères (FK) sont indiquées pour chaque table, permettant de comprendre en un coup d'œil comment les données sont liées.
+
 ---
 
 ## 1. Table `quizzes` — Le cœur métier
@@ -279,6 +281,8 @@ flowchart TD
     J -- Non --> K["❌ Ligne refusée"]
 ```
 
+> **Description du schéma** — Ce diagramme montre l'arbre de décision que PostgreSQL suit pour chaque requête `SELECT` sur la table `quizzes` grâce au Row Level Security (RLS). Quand une requête arrive, PostgreSQL évalue les policies dans l'ordre : d'abord vérifie si le quiz est `published` (public pour tout le monde), sinon vérifie si l'utilisateur est le `creator_id` (propriétaire du quiz), sinon vérifie si l'utilisateur a déjà une tentative sur ce quiz (historique). Si aucune condition n'est remplie, la ligne est refusée (`❌`). C'est le mécanisme central de sécurité qui garantit qu'un utilisateur ne voit que les quiz auxquels il a droit.
+
 | Nom de la policy | Opération | Règle | Explication |
 |------------------|-----------|-------|-------------|
 | `quizzes_select_published` | `SELECT` | `status = 'published'` | **Public** : tout le monde voit les quiz publiés. |
@@ -441,3 +445,5 @@ graph LR
     A --"RLS protégé"--> RLS
     UA --"RLS protégé"--> RLS
 ```
+
+> **Description du schéma** — Ce diagramme offre une **vue physique complète** de l'architecture côté base de données. On y voit les deux schémas PostgreSQL (`public` et `auth`) et les tables métier avec leurs relations cardinalité (`1:N`, `N:1`). Les **Server Components** Next.js font des `SELECT` sur `quizzes` pour afficher le catalogue. Les **Server Actions** insèrent des tentatives et réponses pendant le jeu. Chaque table est reliée au bloc `RLS Policies` (`🔒`) symbolisant que PostgreSQL filtre chaque ligne individuellement. Les clés étrangères (`creator_id`, `user_id`) relient les tables au système d'authentification `auth.users`. C'est la "carte complète" qui associe structure de données, sécurité et flux applicatifs.

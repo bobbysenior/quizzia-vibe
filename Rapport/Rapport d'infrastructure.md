@@ -51,6 +51,8 @@ graph TB
     Auth --"JWT verification"--> PG
 ```
 
+> **Description du schéma** — Ce diagramme illustre la **stack technique complète** de Quizia sous forme de trois blocs principaux. À gauche, le **navigateur client** ; au centre, l'**application Next.js** avec ses Server Components, Client Components, Server Actions et services internes (Auth, Quiz, IA) ; à droite, la **plateforme Supabase Cloud** (PostgreSQL, Auth, API REST, Studio) et le service externe **Cerebras**. Les flèches montrent les flux de données : HTTP entre le client et Next.js, lectures/écritures SQL depuis les Server Components vers PostgreSQL, appels API pour la génération IA, et gestion des sessions JWT avec le service Auth.
+
 ---
 
 ## 1. Next.js 16 — Application Frontend et Serveur
@@ -111,6 +113,8 @@ flowchart TB
     C4 --"POST actions.ts"--> S3
 ```
 
+> **Description du schéma** — Ce diagramme distingue les **fichiers exécutés côté serveur** (gauche) de ceux exécutés **côté navigateur** (droite). Les Server Components (`page.tsx`, `layout.tsx`) récupèrent les données et les passent via des **props** aux Client Components (`quiz-list-client.tsx`, `quiz-editor.tsx`, etc.). Ces derniers gèrent l'interactivité (clics, états) et renvoient les mutations au serveur via les **Server Actions** ou des appels API. Les flèches matérialisent ce cycle : données qui descendent du serveur → actions qui remontent du client.
+
 Les composants marqués `'use client'` sont rendus côté navigateur. Ce sont les seuls à pouvoir utiliser des hooks React (`useState`, `useEffect`, `useRouter`) et à réagir aux événements DOM (clics, saisies). Les composants serveur sont exécutés une seule fois sur le serveur et envoient du HTML pur, optimisant le temps de chargement initial.
 
 ---
@@ -140,6 +144,8 @@ flowchart LR
     Admin["Développeur"] --"HTTPS"--> Studio
     Studio --"SQL"--> DB
 ```
+
+> **Description du schéma** — Ce diagramme décompose la **plateforme Supabase Cloud** en ses 4 briques essentielles : **Auth** (GoTrue) gère les sessions JWT, **PostgreSQL** stocke les données et applique les RLS, **PostgREST** expose automatiquement une API REST, et **Supabase Studio** est l'interface d'administration. Les flèches montrent que Next.js interagit via HTTPS avec l'API REST et Auth, tandis que le développeur administre directement la base via Studio. PostgreSQL est le point central où convergent toutes les données.
 
 ### PostgreSQL — Le cœur de données
 
@@ -203,6 +209,8 @@ sequenceDiagram
     NextClient-->>User: Redirection → /quizzes/{id}/edit
 ```
 
+> **Description du schéma** — Ce diagramme de séquence montre le **flux complet de génération d'un quiz par IA**, étape par étape. L'utilisateur saisit un prompt dans le formulaire client. La requête transite par une **Route API** Next.js qui valide le JWT et appelle le **service IA**. Celui-ci construit un prompt système en français, appelle l'**API Cerebras**, parse la réponse JSON avec **Zod**, puis insère le quiz dans **Supabase** via la **Service Role Key** (pour bypasser le RLS). L'application redirige finalement l'utilisateur vers l'**éditeur de quiz** pour validation avant publication.
+
 ### Sécurité et validation
 La réponse brute de l'IA est **toujours validée** par un schéma Zod avant d'être insérée en base. Cela évite les erreurs de format (clés manquantes, types incorrects) qui pourraient corrompre la base ou provoquer des bugs d'affichage.
 
@@ -238,6 +246,8 @@ sequenceDiagram
     PG-->>NextJS: Données utilisateur
     NextJS-->>Browser: HTML avec les KPIs
 ```
+
+> **Description du schéma** — Ce diagramme de séquence illustre le **processus complet d'authentification**. L'utilisateur saisit ses identifiants dans le navigateur (client). Le formulaire appelle une **Server Action** Next.js qui contacte **GoTrue** (le service d'authentification Supabase). GoTrue vérifie le mot de passe, émet un **JWT** et un refresh token. Next.js crée un **cookie de session HTTP-only** côté serveur (SSR), puis redirige vers le tableau de bord. Celui-ci est un **Server Component** qui interroge PostgreSQL via `auth.uid()` pour récupérer les données personnelles de l'utilisateur. Le serveur génère le HTML final et l'envoie au navigateur.
 
 ### Flux de jeu (jouer à un quiz)
 
@@ -275,6 +285,9 @@ sequenceDiagram
     Service-->>SA: score, total
     SA-->>Browser: redirect('/quizzes/{id}/results')
 ```
+
+> **Description du schéma** — Ce diagramme de séquence détaille le **cycle de vie complet d'une partie de quiz**. Le joueur clique sur "Commencer" : le client appelle une **Server Action** qui insère une ligne `quiz_attempts` dans PostgreSQL. Pour **chaque question**, l'utilisateur sélectionne une réponse dans le navigateur, qui envoie la réponse au serveur via une Server Action. Le serveur insère la réponse dans `user_answers`, récupère la bonne réponse via une requête SQL, et retourne le feedback (juste/faux) au navigateur. Après avoir répondu à toutes les questions, une dernière Server Action marque la session comme `completed`, calcule le score, et redirige vers la page de résultats.
+
 
 ---
 

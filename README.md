@@ -6,20 +6,16 @@ Application de quiz générés par intelligence artificielle. Créez, partagez e
 
 ## Stack
 
-| Couche | Technologie |
-|--------|-------------|
+| Couche | Technologie                                       |
+|--------|---------------------------------------------------|
 | **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS v4 |
-| **Backend** | Supabase (PostgreSQL 15, Auth, REST API) |
-| **IA** | Cerebras Cloud SDK (génération de questions) |
-| **Infra** | Docker (Supabase self-hosted) |
-
+| **Backend** | Supabase *Saas* (PostgreSQL 15, Auth, REST API)   |
+| **IA** | Cerebras Cloud SDK (génération de questions)      |
 ---
 
 ## Prérequis
 
 - [Node.js](https://nodejs.org/) ≥ 20
-- Optionnel : [Supabase CLI](https://supabase.com/docs/guides/cli)
-
 ---
 
 ## Installation
@@ -33,16 +29,16 @@ cd tp1_quizz
 cp .env.example .env
 # Éditer .env pour définir des secrets forts (POSTGRES_PASSWORD, JWT_SECRET, etc.)
 
-Générer des clés : 
+# 3. Générations des clés : 
 ./utils/generate-keys.sh
 
-# 5. Installer les dépendances frontend
+# 4. Installer les dépendances frontend
 npm install
 
-# 6. Remplir la base avec des données de démonstration
+# 5. Remplir la base avec des données de démonstration
 npm run seed
 
-# 7. Démarrer l'application
+# 6. Démarrer l'application
 npm run dev
 ```
 
@@ -72,11 +68,10 @@ L'application est accessible sur [http://localhost:3000](http://localhost:3000).
 
 ## Services
 
-| Service | URL |
-|---|---|
-| App Next.js | http://localhost:3000 |
-| Supabase Studio | http://localhost:8000 |
-| Supabase API | http://localhost:8000 |
+| Service | URL                                      |
+|---|------------------------------------------|
+| App Next.js | http://localhost:3000                    |
+| Supabase Studio | https://mnqikcyznyvypxkajcil.supabase.co |
 
 ---
 
@@ -158,6 +153,7 @@ L'application est accessible sur [http://localhost:3000](http://localhost:3000).
 ├── supabase/
 │   └── migrations/             # Migrations SQL
 ├── PR/                         # Pull requests (historique)
+├── Rapport/                    # Rapports complets du projet
 ├── docs/                       # Documentation projet
 └── scripts/                    # Seed + tests
 ```
@@ -170,8 +166,18 @@ L'application est accessible sur [http://localhost:3000](http://localhost:3000).
 - [Schéma de base de données](docs/schema.md) — tables, RLS, relations
 - [Backlog/User Stories](docs/backlog.md) — spécifications fonctionnelles
 
+## 📄 Rapports complets
+
+- [Rapport de fonctionnement](Rapport/Rapport%20de%20fonctionnement.md) — Parcours utilisateur, fonctionnalités et justifications métier (non technique)
+- [Rapport d'infrastructure](Rapport/Rapport%20d'infrastructure.md) — Architecture technique, flux réseau, schémas Mermaid
+- [Rapport Backend](Rapport/Rapport%20Backend.md) — Schéma base de données, tables, triggers, RLS, migrations
+
 ---
 
 ## Licence
 
-Projet pédagogique — Hackathon edition.
+Ce projet est sous licence [MIT](LICENSE).
+
+---
+
+*Projet pédagogique — Quizia, 2025.*
