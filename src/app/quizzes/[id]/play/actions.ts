@@ -9,11 +9,10 @@ import {
 import type { QuizQuestion } from '@/lib/services/quizzes.service';
 
 export async function startAttempt(
-  quizId: string,
-  totalQuestions: number
+  quizId: string
 ): Promise<{ attemptId: string; questions: QuizQuestion[] }> {
-  const attempt = await createQuizAttempt(quizId, totalQuestions);
   const questions = await getQuizQuestions(quizId);
+  const attempt = await createQuizAttempt(quizId, questions.length);
   return { attemptId: attempt.id, questions };
 }
 
