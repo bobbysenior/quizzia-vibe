@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getOpenAIClient } from './openai';
+import { getCerebrasClient } from './cerebras';
 
 export const llmChoiceSchema = z.object({
   choice_text: z.string().min(1),
@@ -56,14 +56,14 @@ export async function generateQuizWithAI(
   minQuestions: number,
   maxQuestions: number
 ): Promise<LLMQuizOutput> {
-  const openai = getOpenAIClient();
+  const cerebras = getCerebrasClient();
 
   const userMessage = `Génère un quiz avec entre ${minQuestions} et ${maxQuestions} questions.
 
 Description du quiz souhaité : ${prompt}`;
 
-  const response = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+  const response = await cerebras.chat.completions.create({
+    model: process.env.CEREBRAS_MODEL ?? 'gpt-oss-120b',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userMessage },
@@ -72,7 +72,8 @@ Description du quiz souhaité : ${prompt}`;
     response_format: { type: 'json_object' },
   });
 
-  const raw = response.choices[0]?.message?.content;
+  const choice = (response as { choices?: Array<{ message?: { content?: string } }> }).choices?.[0];
+  const raw = choice?.message?.content;
   if (!raw) {
     throw new Error("L'IA n'a pas généré de réponse.");
   }
