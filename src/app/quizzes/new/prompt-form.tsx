@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 export function PromptForm() {
   const router = useRouter();
   const [prompt, setPrompt] = useState('');
-  const [minQuestions, setMinQuestions] = useState(5);
-  const [maxQuestions, setMaxQuestions] = useState(10);
+  const [questionCount, setQuestionCount] = useState(10);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [error, setError] = useState('');
 
@@ -24,8 +23,8 @@ export function PromptForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: prompt.trim(),
-          min_questions: minQuestions,
-          max_questions: maxQuestions,
+          min_questions: questionCount,
+          max_questions: questionCount,
         }),
       });
 
@@ -74,35 +73,20 @@ export function PromptForm() {
           />
         </div>
 
-        <div className="flex gap-4">
-          <div className="flex flex-col gap-1.5 flex-1">
-            <label htmlFor="min_questions" className="text-[13px] font-medium text-ink-2">
-              Min questions
-            </label>
-            <input
-              id="min_questions"
-              type="number"
-              min={1}
-              max={30}
-              value={minQuestions}
-              onChange={(e) => setMinQuestions(Number(e.target.value))}
-              className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5 flex-1">
-            <label htmlFor="max_questions" className="text-[13px] font-medium text-ink-2">
-              Max questions
-            </label>
-            <input
-              id="max_questions"
-              type="number"
-              min={1}
-              max={30}
-              value={maxQuestions}
-              onChange={(e) => setMaxQuestions(Number(e.target.value))}
-              className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
-            />
-          </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="question_count" className="text-[13px] font-medium text-ink-2">
+            Nombre de questions
+          </label>
+          <select
+            id="question_count"
+            value={questionCount}
+            onChange={(e) => setQuestionCount(Number(e.target.value))}
+            className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
+          >
+            {Array.from({ length: 26 }, (_, i) => i + 5).map((n) => (
+              <option key={n} value={n}>{n} questions</option>
+            ))}
+          </select>
         </div>
 
         {status === 'error' && (

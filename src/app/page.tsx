@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { listQuizzes } from '@/lib/services/quizzes.service';
 
@@ -89,10 +88,6 @@ export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (user) {
-    redirect('/dashboard');
-  }
-
   const quizzes = await listQuizzes();
 
   return (
@@ -116,10 +111,10 @@ export default async function Home() {
           </p>
           <div className="inline-flex gap-3 flex-wrap justify-center">
             <Link
-              href="/login"
+              href={user ? "/quizzes/new" : "/login"}
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink text-white text-base font-medium hover:-translate-y-px hover:shadow-[0_10px_30px_rgba(0,0,0,0.15)] transition"
             >
-              Commencer gratuitement <span className="transition-transform group-hover:translate-x-1">→</span>
+              Commencer <span className="transition-transform group-hover:translate-x-1">→</span>
             </Link>
             <Link
               href="#bibliotheque"
@@ -129,7 +124,7 @@ export default async function Home() {
             </Link>
           </div>
         </div>
-        <LivePreview />
+
         <Marquee />
       </section>
 
@@ -194,6 +189,14 @@ export default async function Home() {
             ))}
           </div>
         </div>
+
+        <div className="text-center max-w-[680px] mx-auto mt-16 mb-4">
+          <p className="text-[clamp(18px,2vw,24px)] font-semibold text-ink leading-snug tracking-[-0.015em]">
+            Un aperçu en temps réel. Pas de surprise, juste du plaisir.
+          </p>
+        </div>
+
+        <LivePreview />
       </section>
 
       {/* Quiz Library */}
@@ -250,10 +253,6 @@ export default async function Home() {
       <section className="py-20">
         <div className="mx-8 bg-ink text-white rounded-[32px] py-20 px-16 text-center relative overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(40%_60%_at_80%_20%,oklch(60%_0.22_280_/_0.4),transparent_70%),radial-gradient(40%_60%_at_20%_80%,oklch(70%_0.2_200_/_0.3),transparent_70%)]">
           <div className="relative">
-            <div className="font-mono text-xs font-medium tracking-[0.06em] uppercase text-white/65 mb-5">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-2 align-middle" />
-              Gratuit, sans carte bancaire
-            </div>
             <h2 className="text-[clamp(36px,5vw,64px)] font-semibold tracking-[-0.035em] leading-[1.02] mb-4">
               Créez votre premier quiz
               <br />
@@ -264,16 +263,16 @@ export default async function Home() {
             </p>
             <div className="inline-flex gap-3 flex-wrap justify-center">
               <Link
-                href="/login"
+                href={user ? "/quizzes/new" : "/login"}
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white text-ink text-base font-medium hover:-translate-y-px transition"
               >
-                Créer mon compte <span>→</span>
+                {user ? 'Créer un quiz' : 'Créer mon compte'} <span>→</span>
               </Link>
               <Link
                 href="/dashboard"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/25 text-white text-base font-medium hover:bg-white/10 hover:border-white transition"
               >
-                Voir un exemple de tableau de bord
+                {user ? 'Tableau de bord' : 'Se connecter'}
               </Link>
             </div>
           </div>

@@ -16,7 +16,7 @@ const COPY = {
   signup: {
     eyebrow: 'Bienvenue',
     title: 'Créez votre compte.',
-    lede: 'Trente secondes. Pas de carte bancaire. Pas de pubs.',
+    lede: 'Trente secondes. Pas de pubs.',
     submit: 'Créer mon compte',
     switchQ: 'Déjà inscrit·e ?',
     switchLabel: 'Se connecter →',
@@ -80,11 +80,6 @@ export default function LoginPage() {
             </p>
             <div className="text-[13px] text-white/55 font-mono mt-3">Léa M. — Professeure d&apos;histoire-géo</div>
           </div>
-        </div>
-
-        <div className="flex justify-between items-center font-mono text-xs text-white/40 uppercase tracking-[0.05em]">
-          <span>v1.0 · hackathon edition</span>
-          <span>Aucune carte requise</span>
         </div>
       </aside>
 

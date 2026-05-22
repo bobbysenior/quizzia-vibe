@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getQuizById } from '@/lib/services/quizzes.service';
+import { ShareButton } from '@/components/share-button';
 
 export default async function QuizDetailPage({
   params,
@@ -65,9 +66,12 @@ export default async function QuizDetailPage({
             Commencer le quiz <span>→</span>
           </Link>
 
-          <p className="text-center mt-4 text-[13px] text-muted">
-            Vos résultats s&apos;afficheront à la fin. Aucune inscription requise.
-          </p>
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <ShareButton
+              label="Partager ce quiz"
+              className="px-4 py-2 rounded-full border border-line text-muted hover:text-ink hover:border-ink hover:bg-bg-soft"
+            />
+          </div>
         </div>
       </div>
     </main>
