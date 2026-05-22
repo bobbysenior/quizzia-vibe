@@ -8,28 +8,51 @@ function getAdminClient() {
   );
 }
 
-export async function createQuizFromLLM(llmOutput: LLMQuizOutput, userId: string) {
+export async function createQuizFromLLM(
+  llmOutput: LLMQuizOutput,
+  userId: string,
+  existingQuizId?: string
+) {
   const supabase = getAdminClient();
 
-  const { data: quiz, error: quizError } = await supabase
-    .from('quizzes')
-    .insert({
-      creator_id: userId,
-      title: llmOutput.title,
-      theme: llmOutput.theme,
-      question_count: llmOutput.questions.length,
-      status: 'draft',
-    })
-    .select()
-    .single();
+  let quizId = existingQuizId;
 
-  if (quizError) throw new Error(quizError.message);
+  if (quizId) {
+    const { error: updateError } = await supabase
+      .from('quizzes')
+      .update({
+        title: llmOutput.title,
+        theme: llmOutput.theme,
+        question_count: llmOutput.questions.length,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', quizId);
+
+    if (updateError) throw new Error(updateError.message);
+
+    await supabase.from('questions').delete().eq('quiz_id', quizId);
+  } else {
+    const { data: quiz, error: quizError } = await supabase
+      .from('quizzes')
+      .insert({
+        creator_id: userId,
+        title: llmOutput.title,
+        theme: llmOutput.theme,
+        question_count: llmOutput.questions.length,
+        status: 'draft',
+      })
+      .select()
+      .single();
+
+    if (quizError) throw new Error(quizError.message);
+    quizId = quiz.id;
+  }
 
   for (const [qi, q] of llmOutput.questions.entries()) {
     const { data: question, error: qError } = await supabase
       .from('questions')
       .insert({
-        quiz_id: quiz.id,
+        quiz_id: quizId,
         question_text: q.question_text,
         order_index: qi,
       })
@@ -51,5 +74,5 @@ export async function createQuizFromLLM(llmOutput: LLMQuizOutput, userId: string
     }
   }
 
-  return quiz;
+  return { id: quizId, title: llmOutput.title };
 }

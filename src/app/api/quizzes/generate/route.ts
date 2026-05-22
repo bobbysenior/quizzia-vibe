@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { generateQuizWithAI } from '@/lib/ai/generate-quiz';
-import { createQuizFromLLM } from '@/lib/ai/create-quiz-from-llm';
+import { tasks } from '@trigger.dev/sdk/v3';
 
 const requestSchema = z.object({
   prompt: z.string().min(5, 'Le prompt doit faire au moins 5 caractères'),
@@ -41,13 +40,38 @@ export async function POST(request: Request) {
   }
 
   try {
-    const llmQuiz = await generateQuizWithAI(
-      parsed.data.prompt,
-      parsed.data.min_questions,
-      parsed.data.max_questions
-    );
+    const { data: quiz, error: quizError } = await supabase
+      .from('quizzes')
+      .insert({
+        creator_id: user.id,
+        title: 'Génération en cours…',
+        theme: parsed.data.prompt.slice(0, 80),
+        question_count: parsed.data.min_questions > 0 ? parsed.data.min_questions : 5,
+        status: 'draft',
+      })
+      .select()
+      .single();
 
-    const quiz = await createQuizFromLLM(llmQuiz, user.id);
+    if (quizError) throw new Error(quizError.message);
+
+    try {
+      await tasks.trigger("generate-quiz", {
+        quizId: quiz.id,
+        prompt: parsed.data.prompt,
+        minQuestions: parsed.data.min_questions,
+        maxQuestions: parsed.data.max_questions,
+      });
+    } catch (triggerError) {
+      console.error('Trigger.dev non disponible, fallback synchrone', triggerError);
+      const { generateQuizWithAI } = await import('@/lib/ai/generate-quiz');
+      const { createQuizFromLLM } = await import('@/lib/ai/create-quiz-from-llm');
+      const llmQuiz = await generateQuizWithAI(
+        parsed.data.prompt,
+        parsed.data.min_questions,
+        parsed.data.max_questions
+      );
+      await createQuizFromLLM(llmQuiz, user.id, quiz.id);
+    }
 
     return NextResponse.json({ quizId: quiz.id }, { status: 201 });
   } catch (e: unknown) {
