@@ -4,24 +4,46 @@
 
 Le système de génération de quiz par IA suit un pattern **création → queue → polling** pour offrir une UX non-bloquante malgré la latence de l'IA.
 
-```
-┌─────────────────┐     POST /api/quizzes/generate     ┌──────────────────┐
-│  PromptForm.tsx  │ ─────────────────────────────────> │  API Route       │
-│  (Client)        │                                    │  (Server)        │
-└────────┬─────────┘                                    └────────┬─────────┘
-         │                                                       │
-         │  redirect /quizzes/{id}/edit                          │ 1. INSERT quiz (draft)
-         │                                                       │ 2. Trigger queue
-         │                                                       │
-         v                                                       v
-┌─────────────────────┐                              ┌──────────────────────┐
-│  EditQuizClient.tsx  │     poll /3s                 │  generateQuizTask    │
-│  (Client)            │ ◄─────────────────────────   │  (Trigger.dev queue) │
-│                      │                              │                      │
-│  Status machine:     │     loadQuizForEdit()        │  Ou fallback synchrone│
-│  loading →           │ ◄─────────────────────────   │  si Trigger.dev down  │
-│  generating → ready  │                              │                      │
-└─────────────────────┘                              └──────────────────────┘
+```mermaid
+sequenceDiagram
+    participant User as 👤 Utilisateur
+    participant PF as PromptForm.tsx<br/>(Client)
+    participant API as /api/quizzes/generate<br/>(Route API)
+    participant DB as Supabase<br/>(Base de données)
+    participant T as generateQuizTask<br/>(Trigger.dev Queue)
+    participant LLM as Cerebras IA<br/>(LLM)
+    participant EC as EditQuizClient.tsx<br/>(Client - Polling)
+
+    User->>PF: Remplit le prompt + questionCount
+    PF->>API: POST { prompt, min_questions, max_questions }
+    
+    API->>DB: INSERT quiz (title="Génération en cours…", question_count, status="draft")
+    DB-->>API: quiz.id
+    
+    API->>T: tasks.trigger("generate-quiz", { quizId, prompt, ... })
+    API-->>PF: { quizId }
+    PF->>EC: redirect /quizzes/{id}/edit
+    
+    Note over EC: Montage → status = "loading"
+    EC->>DB: loadQuizForEdit(quizId)
+    DB-->>EC: title="Génération en cours…", questions=[]
+    Note over EC: status = "generating"<br/>démarre le polling (3s)
+
+    T->>LLM: generateQuizWithAI(prompt, minQuestions, maxQuestions)
+    LLM-->>T: JSON { title, theme, questions[] }
+    
+    T->>DB: DELETE questions WHERE quiz_id
+    T->>DB: INSERT questions + choices
+    T->>DB: UPDATE quiz (title, theme, question_count final)
+
+    loop Polling toutes les 3s
+        EC->>DB: loadQuizForEdit(quizId)
+        DB-->>EC: quiz + questions
+        Note over EC: Vérifie :<br/>1. title ≠ "Génération en cours…"<br/>2. questions.length >= question_count<br/>3. chaque question a >= 2 choix
+    end
+    
+    Note over EC: ✅ 3 conditions OK → status = "ready"
+    EC->>User: Affiche QuizEditor avec le quiz complet
 ```
 
 ## 1. Déclenchement : la route API
@@ -109,6 +131,75 @@ if (title === 'Génération en cours…' || actualQuestions < expectedCount || !
 } else {
   // passe en ready → affiche l'éditeur
 }
+```
+
+### Traçage du polling dans le code
+
+```mermaid
+flowchart TD
+    subgraph Client["🖥️ Client - edit-quiz-client.tsx"]
+        A["useState: status = 'loading'"]
+        B["useCallback: load()"]
+        C["useEffect: load() au montage"]
+        D{"loadQuizForEdit(quizId)"}
+        E{"res.notFound ?"}
+        F["setState({ status: 'notFound' })"]
+        G["Calcul des 3 conditions"]
+        H{"Titre = 'Génération en cours…'<br/>OU<br/>questions.length < question_count<br/>OU<br/>!allHaveChoices ?"}
+        I["setState({ status: 'generating' })"]
+        J["setState({ status: 'ready' })"]
+        K["useEffect: si status='generating'"]
+        L["setInterval(load, 3000)"]
+        M["clearInterval au démontage"]
+        N["Affiche QuizEditor"]
+    end
+
+    subgraph Server["⚙️ Server - actions.ts"]
+        O["loadQuizForEdit(quizId)"]
+        P["getQuizForEdit(quizId, userId)"]
+        Q["SELECT quizzes WHERE id + creator_id"]
+        R["SELECT questions + choices JOIN"]
+        S["Retourne { quiz, questions }"]
+    end
+
+    subgraph Valid["🔍 Logique de validation dans load()"]
+        T1["expectedCount = res.quiz.question_count"]
+        T2["actualQuestions = res.questions.length"]
+        T3["allHaveChoices = res.questions.every(q => q.choices.length >= 2)"]
+    end
+
+    A --> C
+    C --> B
+    B --> D
+    D --> O
+    O --> P
+    P --> Q
+    P --> R
+    Q --> S
+    R --> S
+    S --> E
+    E -->|oui| F
+    E -->|non| G
+    G --> T1
+    G --> T2
+    G --> T3
+    T1 --> H
+    T2 --> H
+    T3 --> H
+    H -->|oui| I
+    H -->|non| J
+    I --> K
+    K --> L
+    L -->|toutes les 3s| B
+    M -.->|unmount| L
+    J --> N
+
+    style Client fill:#1a1a2e,stroke:#e0e0e0,color:#e0e0e0
+    style Server fill:#16213e,stroke:#e0e0e0,color:#e0e0e0
+    style Valid fill:#0f3460,stroke:#e94560,color:#e0e0e0
+    style H fill:#e94560,stroke:#e94560,color:#fff
+    style J fill:#00b894,stroke:#00b894,color:#fff
+    style I fill:#fdcb6e,stroke:#fdcb6e,color:#1a1a2e
 ```
 
 ## Flux complet
