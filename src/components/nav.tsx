@@ -23,7 +23,8 @@ export default function Nav({ userEmail }: Props) {
       <div className="max-w-[1200px] mx-auto px-8 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-semibold text-[17px] tracking-[-0.02em]">
-          <span className="w-[22px] h-[22px] rounded-md bg-ink relative overflow-hidden after:absolute after:inset-1 after:rounded-[3px] after:bg-[linear-gradient(135deg,var(--color-accent),oklch(70%_0.2_320))]" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="" width={24} height={24} />
           Quizia
         </Link>
 

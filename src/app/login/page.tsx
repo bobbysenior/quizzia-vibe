@@ -41,7 +41,8 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.04)_1px,transparent_0)] bg-[size:24px_24px] z-[-1] [mask:radial-gradient(ellipse_80%_70%_at_50%_50%,black,transparent)]" />
 
         <div className="flex items-center gap-3">
-          <span className="w-7 h-7 rounded-lg bg-ink relative overflow-hidden after:absolute after:inset-1 after:rounded-[3px] after:bg-[linear-gradient(135deg,var(--color-accent),oklch(70%_0.2_320))]" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.svg" alt="" width={32} height={32} className="rounded-lg" />
           <span className="text-[19px] font-semibold tracking-[-0.02em]">Quizia</span>
         </div>
 
