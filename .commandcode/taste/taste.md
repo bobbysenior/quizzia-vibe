@@ -10,4 +10,5 @@
 
 # workflow
 - Document PRs as sequentially numbered markdown files in the PR/ directory (e.g., PR/1.md, PR/2.md). Confidence: 0.80
+- Be direct and fast — avoid excessive verification (reading files, running diffs) before writing output when the format/context is already known. Confidence: 0.80
 
