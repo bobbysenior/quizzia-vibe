@@ -40,7 +40,7 @@ export default async function RootLayout({
         <div className="flex-1">{children}</div>
         <footer className="border-t border-line-2 py-12 px-8 mt-20 text-[13px] text-muted">
           <div className="max-w-[1200px] mx-auto flex justify-between items-center flex-wrap gap-4">
-            <span>© 2026 Quizia</span>
+            <span>© 2026 Quizia · par Brède-chouchou</span>
               <nav className="flex gap-6">
               <a href="/" className="hover:text-ink transition-colors">Découvrir</a>
               <a href="/quizzes" className="hover:text-ink transition-colors">Catalogue</a>

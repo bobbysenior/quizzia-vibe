@@ -157,10 +157,10 @@ export default async function StatsPage() {
                         <div className={`w-9 h-9 rounded-[10px] shrink-0 ${themeGradients[i % themeGradients.length]}`} />
                         <div>
                           <div className="text-sm font-medium tracking-[-0.01em]">
-                            {a.quizzes?.[0]?.title ?? 'Quiz supprimé'}
+                            {a.quizzes?.title ?? 'Quiz supprimé'}
                           </div>
                           <div className="text-xs text-muted font-mono uppercase tracking-[0.04em] mt-0.5">
-                            {a.quizzes?.[0]?.theme ?? ''} · {a.total_questions} Q
+                            {a.quizzes?.theme ?? ''} · {a.total_questions} Q
                           </div>
                         </div>
                       </div>
