@@ -25,7 +25,7 @@ export default function PlayPage({ params }: { params: Promise<{ id: string }> }
     let cancelled = false;
     async function init() {
       try {
-        const result = await startAttempt(id, 1); // total_questions will be set by questions length
+        const result = await startAttempt(id);
         if (cancelled) return;
         setQuestions(result.questions);
         setAttemptId(result.attemptId);

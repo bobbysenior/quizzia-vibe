@@ -16,6 +16,7 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
   const [theme, setTheme] = useState(quiz.theme);
   const [questions, setQuestions] = useState(initialQuestions);
   const [saving, setSaving] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const addQuestion = () => {
@@ -90,6 +91,51 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
       })
     );
   };
+
+  const handleReview = useCallback(async () => {
+    setReviewing(true);
+    setFeedback(null);
+    try {
+      const payload = {
+        title,
+        theme,
+        questions: questions.map((q) => ({
+          question_text: q.question_text,
+          choices: q.choices.map((c) => ({ choice_text: c.choice_text, is_correct: c.is_correct })),
+        })),
+      };
+      const res = await fetch(`/api/quizzes/${quiz.id}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeedback(data.error ?? 'Erreur lors de la correction.');
+        return;
+      }
+      const corrected = data.quiz as typeof payload;
+      setTitle(corrected.title);
+      setTheme(corrected.theme);
+      setQuestions((prev) =>
+        prev.map((q, qi) => ({
+          ...q,
+          question_text: corrected.questions[qi].question_text,
+          choices: corrected.questions[qi].choices.map((c, ci) => ({
+            id: q.choices[ci]?.id ?? '',
+            choice_text: c.choice_text,
+            is_correct: c.is_correct,
+            order_index: q.choices[ci]?.order_index ?? ci,
+          })),
+        })),
+      );
+      setFeedback('Quiz corrigé. Pensez à enregistrer.');
+    } catch {
+      setFeedback('Impossible de contacter le serveur.');
+    } finally {
+      setReviewing(false);
+    }
+  }, [title, theme, questions, quiz.id]);
 
   const handleSaveAll = useCallback(async () => {
     setSaving(true);
@@ -182,8 +228,16 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
           + Ajouter une question
         </button>
         <button
+          onClick={handleReview}
+          disabled={reviewing || saving}
+          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[linear-gradient(120deg,oklch(75%_0.2_280),oklch(70%_0.18_320))] text-white text-base font-medium hover:-translate-y-px hover:shadow-[0_10px_30px_oklch(70%_0.2_280_/_0.35)] transition disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <span>✨</span>
+          {reviewing ? 'Correction…' : 'Corriger'}
+        </button>
+        <button
           onClick={handleSaveAll}
-          disabled={saving}
+          disabled={saving || reviewing}
           className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink text-white text-base font-medium hover:bg-ink/90 transition disabled:opacity-60"
         >
           {saving ? 'Enregistrement…' : 'Enregistrer'}
