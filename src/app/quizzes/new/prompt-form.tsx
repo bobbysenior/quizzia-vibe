@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 export function PromptForm() {
   const router = useRouter();
@@ -20,22 +19,9 @@ export function PromptForm() {
     setError('');
 
     try {
-      const supabase = createClient();
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      if (!token) {
-        setError('Vous devez être connecté.');
-        setStatus('error');
-        return;
-      }
-
       const res = await fetch('/api/quizzes/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: prompt.trim(),
           min_questions: minQuestions,

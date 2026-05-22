@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
 import { generateQuizWithAI } from '@/lib/ai/generate-quiz';
 import { createQuizFromLLM } from '@/lib/ai/create-quiz-from-llm';
 
@@ -10,29 +10,14 @@ const requestSchema = z.object({
   max_questions: z.coerce.number().int().min(1).max(30),
 });
 
-function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
 export async function POST(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  if (!token) {
-    return NextResponse.json({ error: 'Token manquant.' }, { status: 401 });
-  }
-
-  const supabase = getAdminClient();
+  const supabase = await createClient();
   const {
     data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
+  } = await supabase.auth.getUser();
 
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Token invalide.' }, { status: 401 });
+  if (!user) {
+    return NextResponse.json({ error: 'Vous devez être connecté.' }, { status: 401 });
   }
 
   let body: unknown;
