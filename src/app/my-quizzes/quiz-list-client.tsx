@@ -77,12 +77,14 @@ export function QuizListClient({ quizzes }: Props) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href={`/quizzes/${quiz.id}/edit`}
-            className="text-sm px-3 py-2 rounded-full border border-line hover:border-ink hover:bg-bg-soft transition"
-          >
-            Modifier
-          </Link>
+          {quiz.status !== 'published' && (
+            <Link
+              href={`/quizzes/${quiz.id}/edit`}
+              className="text-sm px-3 py-2 rounded-full border border-line hover:border-ink hover:bg-bg-soft transition"
+            >
+              Modifier
+            </Link>
+          )}
 
           {quiz.status === 'draft' && (
             <button
@@ -114,19 +116,21 @@ export function QuizListClient({ quizzes }: Props) {
             </button>
           )}
 
-          <button
-            onClick={() =>
-              handleAction(
-                deleteQuizAction,
-                quiz.id,
-                'Supprimer ce quiz définitivement ?'
-              )
-            }
-            disabled={isPending}
-            className="text-sm px-3 py-2 rounded-full bg-[oklch(96%_0.05_25)] text-bad border border-bad/20 hover:bg-[oklch(94%_0.06_25)] transition disabled:opacity-50"
-          >
-            Supprimer
-          </button>
+          {quiz.status !== 'published' && (
+            <button
+              onClick={() =>
+                handleAction(
+                  deleteQuizAction,
+                  quiz.id,
+                  'Supprimer ce quiz définitivement ?'
+                )
+              }
+              disabled={isPending}
+              className="text-sm px-3 py-2 rounded-full bg-[oklch(96%_0.05_25)] text-bad border border-bad/20 hover:bg-[oklch(94%_0.06_25)] transition disabled:opacity-50"
+            >
+              Supprimer
+            </button>
+          )}
         </div>
       </div>
     );

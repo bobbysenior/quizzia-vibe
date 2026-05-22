@@ -7,24 +7,16 @@ import { PromptForm } from './prompt-form';
 type Mode = 'manual' | 'prompt';
 
 export function CreationSwitcher() {
-  const [mode, setMode] = useState<Mode>('manual');
+  const [mode, setMode] = useState<Mode>('prompt');
 
   return (
     <div className="flex flex-col gap-8">
       <div className="grid grid-cols-2 bg-bg-soft p-1 rounded-full max-w-[320px] relative">
         <div
           className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-full shadow-sm transition-transform duration-300 ${
-            mode === 'prompt' ? 'translate-x-[calc(100%+0px)]' : ''
+            mode === 'manual' ? 'translate-x-[calc(100%+0px)]' : ''
           }`}
         />
-        <button
-          onClick={() => setMode('manual')}
-          className={`relative z-10 py-2.5 px-4 rounded-full text-sm font-medium transition-colors ${
-            mode === 'manual' ? 'text-ink' : 'text-muted'
-          }`}
-        >
-          Manuel
-        </button>
         <button
           onClick={() => setMode('prompt')}
           className={`relative z-10 py-2.5 px-4 rounded-full text-sm font-medium transition-colors ${
@@ -33,9 +25,17 @@ export function CreationSwitcher() {
         >
           Par IA
         </button>
+        <button
+          onClick={() => setMode('manual')}
+          className={`relative z-10 py-2.5 px-4 rounded-full text-sm font-medium transition-colors ${
+            mode === 'manual' ? 'text-ink' : 'text-muted'
+          }`}
+        >
+          Manuel
+        </button>
       </div>
 
-      {mode === 'manual' ? <ManualForm /> : <PromptForm />}
+      {mode === 'prompt' ? <PromptForm /> : <ManualForm />}
     </div>
   );
 }

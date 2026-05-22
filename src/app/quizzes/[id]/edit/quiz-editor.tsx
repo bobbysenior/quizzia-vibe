@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Quiz } from '@/lib/types';
 import type { QuizQuestionWithChoices } from '@/lib/services/quizzes.service';
 import { saveFullQuizAction } from '@/lib/quiz/actions';
@@ -12,12 +13,19 @@ interface Props {
 }
 
 export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
+  const router = useRouter();
   const [title, setTitle] = useState(quiz.title);
   const [theme, setTheme] = useState(quiz.theme);
   const [questions, setQuestions] = useState(initialQuestions);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const handleCancel = () => {
+    if (confirm('Quitter sans enregistrer ? Les modifications seront perdues.')) {
+      router.push('/my-quizzes');
+    }
+  };
 
   const addQuestion = () => {
     const maxOrder = questions.reduce((m, q) => Math.max(m, q.order_index), 0);
@@ -227,23 +235,33 @@ export function QuizEditor({ quiz, questions: initialQuestions }: Props) {
         >
           + Ajouter une question
         </button>
-        <button
-          onClick={handleReview}
-          disabled={reviewing || saving}
-          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[linear-gradient(120deg,oklch(75%_0.2_280),oklch(70%_0.18_320))] text-white text-base font-medium hover:-translate-y-px hover:shadow-[0_10px_30px_oklch(70%_0.2_280_/_0.35)] transition disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <span>✨</span>
-          {reviewing ? 'Correction…' : 'Corriger'}
-        </button>
-        <button
-          onClick={handleSaveAll}
-          disabled={saving || reviewing}
-          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink text-white text-base font-medium hover:bg-ink/90 transition disabled:opacity-60"
-        >
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
+
+        <div className="flex items-center gap-3 ml-auto">
+          <button
+            onClick={handleCancel}
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[oklch(96%_0.05_25)] text-bad border border-bad/20 text-base font-medium hover:bg-[oklch(94%_0.06_25)] transition"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleReview}
+            disabled={reviewing || saving}
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[linear-gradient(120deg,oklch(75%_0.2_280),oklch(70%_0.18_320))] text-white text-base font-medium hover:-translate-y-px hover:shadow-[0_10px_30px_oklch(70%_0.2_280_/_0.35)] transition disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <span>✨</span>
+            {reviewing ? 'Correction…' : 'Corriger'}
+          </button>
+          <button
+            onClick={handleSaveAll}
+            disabled={saving || reviewing}
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-ink text-white text-base font-medium hover:bg-ink/90 transition disabled:opacity-60"
+          >
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </div>
+
         {feedback && (
-          <p className={`text-sm ${feedback.includes('Erreur') ? 'text-bad' : 'text-good'}`}>
+          <p className={`w-full text-sm ${feedback.includes('Erreur') || feedback.includes('Impossible') ? 'text-bad' : 'text-good'}`}>
             {feedback}
           </p>
         )}

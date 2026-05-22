@@ -45,6 +45,7 @@ export default async function RootLayout({
               <a href="/" className="hover:text-ink transition-colors">Découvrir</a>
               <a href="/quizzes" className="hover:text-ink transition-colors">Catalogue</a>
               <a href="/my-quizzes" className="hover:text-ink transition-colors">Mes quiz</a>
+              <a href="/mentions-legales" className="hover:text-ink transition-colors">Mentions légales</a>
             </nav>
           </div>
         </footer>

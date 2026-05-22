@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getExistingAttempt, completeAttempt, getQuizById } from '@/lib/services/quizzes.service';
+import { ShareButton } from '@/components/share-button';
 
 export default async function ResultsPage({
   params,
@@ -85,6 +86,13 @@ export default async function ResultsPage({
         >
           Voir tous les quiz
         </Link>
+      </div>
+
+      <div className="mt-4">
+        <ShareButton
+          label="Partager ce quiz"
+          className="px-6 py-3 rounded-full text-muted hover:text-ink hover:bg-bg-soft border border-transparent hover:border-line"
+        />
       </div>
     </main>
   );
