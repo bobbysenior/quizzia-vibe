@@ -21,7 +21,12 @@ export function EditQuizClient({ quizId }: { quizId: string }) {
       setState({ status: 'notFound' });
       return;
     }
-    if (res.quiz.title === 'Génération en cours…' && res.questions.length === 0) {
+
+    const expectedCount = res.quiz.question_count;
+    const actualQuestions = res.questions.length;
+    const allHaveChoices = res.questions.every((q) => q.choices.length >= 2);
+
+    if (res.quiz.title === 'Génération en cours…' || actualQuestions < expectedCount || !allHaveChoices) {
       setState({ status: 'generating', quiz: res.quiz, questions: res.questions });
       return;
     }
@@ -31,6 +36,16 @@ export function EditQuizClient({ quizId }: { quizId: string }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (state.status !== 'generating') return;
+
+    const interval = setInterval(() => {
+      load();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [state.status, load]);
 
   useEffect(() => {
     if (state.status === 'notFound') {

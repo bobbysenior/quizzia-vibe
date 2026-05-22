@@ -18,18 +18,6 @@ export async function createQuizFromLLM(
   let quizId = existingQuizId;
 
   if (quizId) {
-    const { error: updateError } = await supabase
-      .from('quizzes')
-      .update({
-        title: llmOutput.title,
-        theme: llmOutput.theme,
-        question_count: llmOutput.questions.length,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', quizId);
-
-    if (updateError) throw new Error(updateError.message);
-
     await supabase.from('questions').delete().eq('quiz_id', quizId);
   } else {
     const { data: quiz, error: quizError } = await supabase
@@ -72,6 +60,20 @@ export async function createQuizFromLLM(
         });
       if (cError) throw new Error(cError.message);
     }
+  }
+
+  if (existingQuizId) {
+    const { error: updateError } = await supabase
+      .from('quizzes')
+      .update({
+        title: llmOutput.title,
+        theme: llmOutput.theme,
+        question_count: llmOutput.questions.length,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', quizId);
+
+    if (updateError) throw new Error(updateError.message);
   }
 
   return { id: quizId, title: llmOutput.title };
