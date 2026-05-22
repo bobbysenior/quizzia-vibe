@@ -13,12 +13,15 @@ export async function createClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          try {
-            for (const { name, value, options } of cookiesToSet) {
+          // Next.js restricts cookie modification to Server Actions / Route Handlers.
+          // Supabase may attempt to set cookies during token refresh. We gracefully ignore
+          // errors here to avoid breaking server components.
+          for (const { name, value, options } of cookiesToSet) {
+            try {
               cookieStore.set(name, value, options);
+            } catch (e) {
+              // Silently ignore – cookie setting is not allowed in this context.
             }
-          } catch {
-            // Cookie write not allowed in Server Components — middleware handles refresh
           }
         },
       },

@@ -24,7 +24,7 @@ function loadEnv(path) {
 
 const env = loadEnv(resolve(root, '.env'));
 
-const supabaseUrl = env.SUPABASE_PUBLIC_URL || 'http://localhost:8000';
+const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:8000';
 const serviceRoleKey = env.SERVICE_ROLE_KEY;
 const anonKey = env.ANON_KEY;
 

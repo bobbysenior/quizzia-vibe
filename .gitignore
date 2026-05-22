@@ -1,6 +1,7 @@
 volumes/db/data
 volumes/storage
 .env
+.env.copy
 .env.local
 .env.*.local
 test.http
