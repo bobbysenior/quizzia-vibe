@@ -1,5 +1,11 @@
 import { task, logger } from "@trigger.dev/sdk/v3";
 import { generateQuizWithAI } from "@/lib/ai/generate-quiz";
+import WebSocket from "ws";
+
+// Injecte WebSocket dans globalThis avant l'import de supabase-js
+// car supabase-js 2.x détecte Node.js < 22 et throw dans son constructeur
+(globalThis as Record<string, unknown>).WebSocket = WebSocket;
+
 import { createClient } from "@supabase/supabase-js";
 
 interface GenerateQuizPayload {
@@ -14,6 +20,9 @@ function getAdminClient() {
     return createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: { autoRefreshToken: false, persistSession: false },
+        },
     );
 }
 
