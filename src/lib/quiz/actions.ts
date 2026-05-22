@@ -172,6 +172,40 @@ export async function setCorrectChoiceAction(_prevState: unknown, formData: Form
   }
 }
 
+// --- Mes quiz : publier / archiver / supprimer ---
+
+import { updateQuizStatus, deleteQuiz } from '@/lib/services/quizzes.service';
+
+export async function publishQuizAction(quizId: string) {
+  try {
+    await updateQuizStatus(quizId, 'published');
+    return { success: true };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Erreur.';
+    return { error: message };
+  }
+}
+
+export async function archiveQuizAction(quizId: string) {
+  try {
+    await updateQuizStatus(quizId, 'archived');
+    return { success: true };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Erreur.';
+    return { error: message };
+  }
+}
+
+export async function deleteQuizAction(quizId: string) {
+  try {
+    await deleteQuiz(quizId);
+    return { success: true };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Erreur.';
+    return { error: message };
+  }
+}
+
 interface ChoiceInput {
   choice_text: string;
   is_correct: boolean;

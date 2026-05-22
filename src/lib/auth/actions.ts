@@ -31,7 +31,7 @@ export async function signUp(_prevState: unknown, formData: FormData) {
   });
 
   if (error) return { error: error.message };
-  redirect('/');
+  redirect('/dashboard');
 }
 
 export async function signIn(_prevState: unknown, formData: FormData) {
@@ -51,7 +51,7 @@ export async function signIn(_prevState: unknown, formData: FormData) {
   });
 
   if (error) return { error: error.message };
-  redirect('/');
+  redirect('/dashboard');
 }
 
 export async function signOut() {
