@@ -28,13 +28,10 @@ export async function signUp(_prevState: unknown, formData: FormData) {
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-    },
   });
 
   if (error) return { error: error.message };
-  redirect('/login?message=Vérifiez vos emails pour confirmer votre compte.');
+  redirect('/');
 }
 
 export async function signIn(_prevState: unknown, formData: FormData) {
