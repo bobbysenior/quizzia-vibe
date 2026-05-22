@@ -47,15 +47,18 @@ export function ManualForm() {
           <label htmlFor="question_count" className="text-[13px] font-medium text-ink-2">
             Nombre de questions *
           </label>
-          <input
+          <select
             id="question_count"
             name="question_count"
-            type="number"
-            min={5}
-            max={30}
-            placeholder="Entre 5 et 30"
-            className="bg-bg-elev border border-line rounded-xl py-3.5 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
+            defaultValue={10}
+            className="bg-bg-elev border border-line rounded-xl py-3.5 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
+          >
+            {Array.from({ length: 26 }, (_, i) => i + 5).map((n) => (
+              <option key={n} value={n}>
+                {n} questions
+              </option>
+            ))}
+          </select>
           {state.fieldErrors?.question_count && (
             <p className="text-sm text-bad">{state.fieldErrors.question_count[0]}</p>
           )}

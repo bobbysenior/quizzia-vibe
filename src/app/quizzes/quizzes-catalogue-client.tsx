@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Quiz } from '@/lib/types';
 
 const themeGradients = [
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function QuizzesCatalogueClient({ quizzes, themes }: Props) {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
 
@@ -44,9 +46,15 @@ export function QuizzesCatalogueClient({ quizzes, themes }: Props) {
     setSelectedThemes([]);
   }
 
+  function playRandomQuiz() {
+    if (quizzes.length === 0) return;
+    const randomQuiz = quizzes[Math.floor(Math.random() * quizzes.length)];
+    router.push(`/quizzes/${randomQuiz.id}/play`);
+  }
+
   return (
     <>
-      {/* Filtres */}
+      {/* Filtres + Bouton aléatoire */}
       <div className="flex flex-col sm:flex-row gap-4 mb-8">
         {/* Recherche */}
         <div className="flex-1 flex flex-col gap-1.5">
@@ -75,6 +83,20 @@ export function QuizzesCatalogueClient({ quizzes, themes }: Props) {
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
           </div>
+        </div>
+
+        {/* Bouton quiz aléatoire */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[13px] font-medium text-ink-2 invisible max-sm:hidden">
+            Aléatoire
+          </label>
+          <button
+            onClick={playRandomQuiz}
+            disabled={quizzes.length === 0}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-accent bg-accent/5 text-accent text-sm font-medium hover:bg-accent/10 hover:border-accent transition disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Quiz aléatoire
+          </button>
         </div>
       </div>
 
