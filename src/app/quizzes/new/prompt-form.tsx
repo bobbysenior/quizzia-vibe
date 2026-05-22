@@ -1,19 +1,64 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 export function PromptForm() {
+  const router = useRouter();
   const [prompt, setPrompt] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [minQuestions, setMinQuestions] = useState(5);
+  const [maxQuestions, setMaxQuestions] = useState(10);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
-    setSubmitted(true);
-    // TODO: envoyer le prompt à l'IA
+
+    setStatus('loading');
+    setError('');
+
+    try {
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        setError('Vous devez être connecté.');
+        setStatus('error');
+        return;
+      }
+
+      const res = await fetch('/api/quizzes/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          min_questions: minQuestions,
+          max_questions: maxQuestions,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? 'Erreur lors de la génération.');
+        setStatus('error');
+        return;
+      }
+
+      router.push(`/quizzes/${data.quizId}/edit`);
+    } catch {
+      setError('Impossible de contacter le serveur.');
+      setStatus('error');
+    }
   };
 
-  if (submitted) {
+  if (status === 'loading') {
     return (
       <div className="bg-bg-elev border border-line-2 rounded-[22px] p-10 text-center">
         <div className="w-16 h-16 rounded-full bg-[conic-gradient(from_0deg,var(--color-accent),oklch(75%_0.2_320),oklch(80%_0.15_200),var(--color-accent))] animate-[spin_4s_linear_infinite] shadow-[0_0_40px_oklch(70%_0.2_280_/_0.4)] mx-auto mb-6" />
@@ -42,6 +87,43 @@ export function PromptForm() {
             className="bg-bg-elev border border-line rounded-xl py-3.5 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full resize-none"
           />
         </div>
+
+        <div className="flex gap-4">
+          <div className="flex flex-col gap-1.5 flex-1">
+            <label htmlFor="min_questions" className="text-[13px] font-medium text-ink-2">
+              Min questions
+            </label>
+            <input
+              id="min_questions"
+              type="number"
+              min={1}
+              max={30}
+              value={minQuestions}
+              onChange={(e) => setMinQuestions(Number(e.target.value))}
+              className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 flex-1">
+            <label htmlFor="max_questions" className="text-[13px] font-medium text-ink-2">
+              Max questions
+            </label>
+            <input
+              id="max_questions"
+              type="number"
+              min={1}
+              max={30}
+              value={maxQuestions}
+              onChange={(e) => setMaxQuestions(Number(e.target.value))}
+              className="bg-bg-elev border border-line rounded-xl py-3 px-4 text-base outline-none focus:border-ink focus:shadow-[0_0_0_4px_rgba(29,29,31,0.06)] transition w-full"
+            />
+          </div>
+        </div>
+
+        {status === 'error' && (
+          <div className="bg-[oklch(96%_0.05_25)] border border-bad/20 rounded-xl p-4">
+            <p className="text-sm text-bad">{error}</p>
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-2">
           <p className="text-[13px] text-muted">{prompt.length} caractères</p>
