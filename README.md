@@ -1,17 +1,22 @@
-# Quizz App
+# Quizia — Quiz générés par IA
 
-Application de quizz générés par IA. Créez, partagez et répondez à des quizz sur n'importe quel thème.
+Application de quiz générés par intelligence artificielle. Créez, partagez et répondez à des quiz sur n'importe quel thème, en quelques secondes.
+
+---
 
 ## Stack
 
-- **Frontend** : Next.js 16, TypeScript, Tailwind CSS v4
-- **Backend** : Supabase (PostgreSQL 15, Auth, REST API)
-- **Infra** : Docker (Supabase self-hosted)
+| Couche | Technologie                                       |
+|--------|---------------------------------------------------|
+| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS v4 |
+| **Backend** | Supabase *Saas* (PostgreSQL 15, Auth, REST API)   |
+| **IA** | Cerebras Cloud SDK (génération de questions)      |
+---
 
 ## Prérequis
 
-- [Docker](https://docs.docker.com/get-docker/) et Docker Compose
 - [Node.js](https://nodejs.org/) ≥ 20
+---
 
 ## Installation
 
@@ -23,35 +28,31 @@ cd tp1_quizz
 # 2. Configurer les variables d'environnement
 cp .env.example .env
 # Éditer .env pour définir des secrets forts (POSTGRES_PASSWORD, JWT_SECRET, etc.)
-# Générer des clés : ./utils/generate-keys.sh
 
-# 3. Démarrer Supabase (base de données, auth, API)
-docker compose up -d
-# Attendre que tous les conteneurs soient healthy (~30s)
+# 3. Générations des clés : 
+./utils/generate-keys.sh
 
-# 4. Appliquer la migration initiale
-# La migration est dans supabase/migrations/
-# Via Supabase CLI :
-supabase db push --local
-# Ou manuellement via le Studio : http://localhost:8000 > SQL Editor
-
-# 5. Installer les dépendances frontend
+# 4. Installer les dépendances frontend
 npm install
 
-# 6. Remplir la base de données (données de démo)
+# 5. Remplir la base avec des données de démonstration
 npm run seed
 
-# 7. Démarrer l'application
+# 6. Démarrer l'application
 npm run dev
 ```
 
 L'application est accessible sur [http://localhost:3000](http://localhost:3000).
+
+---
 
 ## Comptes de démo
 
 | Email | Mot de passe |
 |---|---|
 | `demo@quizz.app` | `demo123456` |
+
+---
 
 ## Commandes
 
@@ -63,35 +64,120 @@ L'application est accessible sur [http://localhost:3000](http://localhost:3000).
 | `npm run seed` | Remplir la base avec des données fictives |
 | `npm run lint` | Vérifier le code avec ESLint |
 
+---
+
 ## Services
 
-| Service | URL |
-|---|---|
-| App Next.js | http://localhost:3000 |
-| Supabase Studio | http://localhost:8000 |
-| Supabase API | http://localhost:8000 |
+| Service | URL                                      |
+|---|------------------------------------------|
+| App Next.js | http://localhost:3000                    |
+| Supabase Studio | https://mnqikcyznyvypxkajcil.supabase.co |
+
+---
+
+## Routes principales
+
+| Route | Description | Accès |
+|---|---|---|
+| `/` | Page d'accueil — hero + catalogue public | Tous |
+| `/quizzes` | **Catalogue** — liste des quiz publiés avec recherche et filtres | Tous |
+| `/quizzes/[id]` | Détail d'un quiz — informations + bouton "Commencer" | Tous |
+| `/quizzes/[id]/play` | Jouer au quiz — question par question | Tous |
+| `/quizzes/[id]/results` | Résultats — score, message + bouton partager | Tous |
+| `/quizzes/new` | **Créer un quiz** — IA (défaut) ou manuel | Connecté |
+| `/quizzes/[id]/edit` | **Éditer un quiz** — modifier questions/réponses | Connecté (créateur) |
+| `/dashboard` | **Tableau de bord** — stats, historique, résumé mes quiz | Connecté |
+| `/my-quizzes` | **Mes quiz** — gestion complète (brouillons, publiés, archivés) | Connecté |
+| `/login` | Connexion / Inscription | Non connecté |
+| `/mentions-legales` | Mentions légales | Tous |
+
+---
+
+## Fonctionnalités
+
+### Création de quiz
+- **Par IA** (mode par défaut) — décrivez un sujet, l'IA génère automatiquement les questions et réponses
+- **Manuel** — créez votre quiz question par question
+- Nombre de questions : **5 à 30** (sélecteur déroulant)
+- Édition avant publication — relisez et modifiez chaque question
+
+### Gestion des quiz (Mes quiz)
+- **Brouillons** — modifier, publier, supprimer
+- **Publiés** — uniquement archiver (pas de modification ni suppression)
+- **Archivés** — republier ou supprimer
+
+### Catalogue
+- **Recherche texte** — par titre ou thème
+- **Filtres thème** — multi-sélection, badges cliquables
+- **Quiz aléatoire** — lancer un quiz au hasard
+
+### Jeu
+- Questions une par une, sans limite de temps
+- Score affiché à la fin avec message personnalisé
+- Bouton **Partager** — copie le lien du quiz dans le presse-papiers
+
+### Authentification
+- Inscription / connexion par email
+- Déconnexion depuis la navigation
+- Redirection automatique vers le tableau de bord après connexion
+
+---
 
 ## Structure
 
 ```
 ├── src/
-│   ├── app/              # Pages et routes Next.js (App Router)
-│   │   └── auth/         # Callback OAuth/email
+│   ├── app/                    # Routes Next.js (App Router)
+│   │   ├── page.tsx            # Accueil (landing page)
+│   │   ├── layout.tsx          # Layout global + nav + footer
+│   │   ├── login/              # Connexion / Inscription
+│   │   ├── dashboard/          # Tableau de bord (stats, historique)
+│   │   ├── my-quizzes/         # Gestion des quiz créés
+│   │   ├── mentions-legales/   # Mentions légales
+│   │   ├── quizzes/
+│   │   │   ├── page.tsx        # Catalogue public (avec filtres)
+│   │   │   ├── [id]/           # Détail + jeu + résultats
+│   │   │   └── new/            # Création (IA ou manuel)
+│   │   └── api/
+│   │       └── quizzes/generate/  # Route API Cerebras
+│   ├── components/
+│   │   ├── nav.tsx             # Navigation principale
+│   │   └── share-button.tsx    # Bouton partager (clipboard)
 │   ├── lib/
-│   │   ├── auth/         # Server Actions (signUp, signIn, signOut)
-│   │   ├── services/     # Couche métier (quizzes.service)
-│   │   └── supabase/     # Clients Supabase (navigateur, serveur, proxy)
-│   └── proxy.ts          # Session refresh
+│   │   ├── ai/                 # SDK Cerebras + génération
+│   │   ├── auth/actions.ts     # Server Actions auth
+│   │   ├── quiz/actions.ts     # Server Actions quiz
+│   │   ├── services/           # Couche métier (CRUD)
+│   │   └── supabase/           # Clients Supabase
+│   └── proxy.ts                # Middleware session
 ├── supabase/
-│   └── migrations/       # Migrations SQL
-├── scripts/
-│   └── seed.mjs          # Script de seeding
-├── docs/                 # Documentation
-└── PR/                   # Pull requests
+│   └── migrations/             # Migrations SQL
+├── PR/                         # Pull requests (historique)
+├── Rapport/                    # Rapports complets du projet
+├── docs/                       # Documentation projet
+└── scripts/                    # Seed + tests
 ```
+
+---
 
 ## Documentation
 
-- [Guide API Auth & Quizz](docs/api-guide.md) — pour les développeurs frontend
-- [Schéma de base de données](docs/schema.md)
-- [Backlog (User Stories)](backlog.md)
+- [Guide API Auth & Quizz](docs/api-guide.md) — pour les développeurs
+- [Schéma de base de données](docs/schema.md) — tables, RLS, relations
+- [Backlog/User Stories](docs/backlog.md) — spécifications fonctionnelles
+
+## 📄 Rapports complets
+
+- [Rapport de fonctionnement](Rapport/Rapport%20de%20fonctionnement.md) — Parcours utilisateur, fonctionnalités et justifications métier (non technique)
+- [Rapport d'infrastructure](Rapport/Rapport%20d'infrastructure.md) — Architecture technique, flux réseau, schémas Mermaid
+- [Rapport Backend](Rapport/Rapport%20Backend.md) — Schéma base de données, tables, triggers, RLS, migrations
+
+---
+
+## Licence
+
+Ce projet est sous licence [MIT](LICENSE).
+
+---
+
+*Projet pédagogique — Quizia, 2025.*
