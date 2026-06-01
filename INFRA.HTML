@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>Infrastructure Quizz — Trigger.dev</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #181b22;
+    --panel-border: #2a2f3a;
+    --text: #e6e8ee;
+    --muted: #8a93a6;
+    --accent: #6cb6ff;
+    --accent-2: #a37bff;
+    --ok: #58d68d;
+    --warn: #f4c430;
+    --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: radial-gradient(circle at 30% 10%, #1a1f2e 0%, var(--bg) 60%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .subtitle { color: var(--muted); margin-bottom: 20px; font-size: 14px; }
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+  }
+  .stage {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    min-height: 620px;
+  }
+  svg { width: 100%; height: 620px; display: block; }
+  .node rect {
+    rx: 10; ry: 10;
+    fill: #1e2330;
+    stroke: var(--panel-border);
+    stroke-width: 1.5;
+    transition: stroke .2s, filter .2s;
+    cursor: pointer;
+  }
+  .node:hover rect { stroke: var(--accent); filter: drop-shadow(0 0 8px rgba(108,182,255,.4)); }
+  .node.active rect { stroke: var(--accent-2); filter: drop-shadow(0 0 12px rgba(163,123,255,.7)); }
+  .node text {
+    fill: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  .node .sub {
+    fill: var(--muted);
+    font-size: 11px;
+    font-weight: 400;
+  }
+  .edge {
+    stroke: #3a4150;
+    stroke-width: 2;
+    fill: none;
+    marker-end: url(#arrow);
+  }
+  .edge.flow { stroke: var(--accent); stroke-dasharray: 6 6; }
+  .edge.async { stroke: var(--accent-2); stroke-dasharray: 4 4; }
+  .edge-label {
+    fill: var(--muted);
+    font-size: 10.5px;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .packet {
+    fill: var(--warn);
+    stroke: #fff;
+    stroke-width: 1;
+    opacity: 0;
+  }
+  .packet.run { opacity: 1; }
+  .panel-side {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 18px;
+    height: fit-content;
+    position: sticky;
+    top: 24px;
+  }
+  .panel-side h3 { margin: 0 0 10px; font-size: 15px; }
+  .panel-side .desc { font-size: 13px; color: var(--muted); line-height: 1.55; }
+  .panel-side code {
+    background: #0c0f15;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  button {
+    background: var(--accent);
+    color: #001020;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  button.secondary { background: #2a2f3a; color: var(--text); }
+  button:hover { filter: brightness(1.1); }
+  .log {
+    margin-top: 14px;
+    background: #0c0f15;
+    border-radius: 8px;
+    padding: 10px;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 11.5px;
+    height: 180px;
+    overflow-y: auto;
+    border: 1px solid var(--panel-border);
+  }
+  .log .ln { margin: 0 0 3px; color: var(--muted); }
+  .log .ln .t { color: var(--accent); }
+  .log .ln.ok .t { color: var(--ok); }
+  .log .ln.err .t { color: var(--err); }
+  .legend {
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i {
+    display: inline-block;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #2a2f3a;
+    color: var(--muted);
+    margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+  <h1>Infrastructure — TP Quizz <span class="badge">avec Trigger.dev</span></h1>
+  <div class="subtitle">Survolez ou cliquez sur un composant pour le détail. Lancez la simulation pour voir circuler une requête de génération.</div>
+
+  <div class="layout">
+    <div class="stage">
+      <svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a4150" />
+          </marker>
+        </defs>
+
+        <!-- Edges (drawn first so they're under nodes) -->
+        <g id="edges">
+          <path class="edge flow" id="e1" d="M 130 90 C 250 90, 250 180, 360 180" />
+          <text class="edge-label" x="200" y="125">1. POST /api/quizzes</text>
+
+          <path class="edge flow" id="e2" d="M 460 200 C 560 200, 580 110, 670 110" />
+          <text class="edge-label" x="520" y="145">2. tasks.trigger()</text>
+
+          <path class="edge async" id="e3" d="M 720 150 C 760 250, 760 320, 720 380" />
+          <text class="edge-label" x="745" y="270">3. dispatch</text>
+
+          <path class="edge flow" id="e4" d="M 620 410 C 500 410, 460 360, 380 360" />
+          <text class="edge-label" x="460" y="395">4. prompt → JSON</text>
+
+          <path class="edge flow" id="e5" d="M 670 430 C 540 480, 380 480, 250 460" />
+          <text class="edge-label" x="430" y="510">5. INSERT questions / choices</text>
+
+          <path class="edge async" id="e6" d="M 165 430 C 200 350, 280 250, 360 220" />
+          <text class="edge-label" x="180" y="330">6. realtime (WS)</text>
+
+          <path class="edge async" id="e7" d="M 130 130 C 80 250, 80 380, 150 410" />
+          <text class="edge-label" x="50" y="280">7. UI update</text>
+        </g>
+
+        <!-- Nodes -->
+        <g class="node" data-id="browser">
+          <rect x="20" y="55" width="220" height="70"></rect>
+          <text x="130" y="85">Navigateur (React)</text>
+          <text x="130" y="105" class="sub">Next.js App Router · UI quiz</text>
+        </g>
+
+        <g class="node" data-id="nextjs">
+          <rect x="360" y="150" width="220" height="80"></rect>
+          <text x="470" y="180">Next.js API Routes</text>
+          <text x="470" y="200" class="sub">/api/quizzes/generate</text>
+          <text x="470" y="216" class="sub">Auth + validation Zod</text>
+        </g>
+
+        <g class="node" data-id="trigger">
+          <rect x="670" y="70" width="210" height="80"></rect>
+          <text x="775" y="100">Trigger.dev Cloud</text>
+          <text x="775" y="120" class="sub">Queue · retries · logs</text>
+          <text x="775" y="136" class="sub">proj_ixhay…ckpax</text>
+        </g>
+
+        <g class="node" data-id="worker">
+          <rect x="620" y="380" width="220" height="90"></rect>
+          <text x="730" y="410">Worker (task)</text>
+          <text x="730" y="430" class="sub">generate-quiz · maxDuration 600s</text>
+          <text x="730" y="446" class="sub">retries 3× · backoff exp</text>
+          <text x="730" y="462" class="sub">src/trigger/generate-quiz.ts</text>
+        </g>
+
+        <g class="node" data-id="llm">
+          <rect x="160" y="320" width="220" height="80"></rect>
+          <text x="270" y="350">LLM Provider</text>
+          <text x="270" y="370" class="sub">generateQuizWithAI()</text>
+          <text x="270" y="386" class="sub">prompt → quiz JSON structuré</text>
+        </g>
+
+        <g class="node" data-id="supabase">
+          <rect x="40" y="410" width="220" height="90"></rect>
+          <text x="150" y="440">Supabase</text>
+          <text x="150" y="460" class="sub">Postgres · Auth · Realtime (WS)</text>
+          <text x="150" y="476" class="sub">quizzes / questions / choices</text>
+          <text x="150" y="492" class="sub">service_role key côté worker</text>
+        </g>
+
+        <!-- Animated packet -->
+        <circle id="packet" class="packet" r="6"></circle>
+      </svg>
+
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i> flux synchrone HTTP</span>
+        <span><i style="background:var(--accent-2)"></i> flux async / temps réel</span>
+        <span><i style="background:var(--warn)"></i> requête en cours</span>
+      </div>
+    </div>
+
+    <aside class="panel-side">
+      <h3 id="info-title">Vue d'ensemble</h3>
+      <div class="desc" id="info-body">
+        Le navigateur déclenche la création d'un quiz. Next.js valide et délègue
+        à <code>Trigger.dev</code>, qui distribue la tâche à un worker isolé.
+        Ce dernier appelle le LLM, écrit en base via Supabase, puis le client
+        reçoit la mise à jour par WebSocket (realtime).
+      </div>
+      <div class="controls">
+        <button id="run">▶ Simuler une génération</button>
+        <button class="secondary" id="reset">Reset</button>
+      </div>
+      <div class="log" id="log"></div>
+    </aside>
+  </div>
+
+<script>
+  const INFO = {
+    browser: {
+      t: "Navigateur (React)",
+      b: "Client Next.js (App Router). Construit le formulaire de prompt, abonne un canal Supabase Realtime au quiz nouvellement créé pour recevoir les questions au fil de l'eau, et propose un fallback en polling si le WebSocket coupe."
+    },
+    nextjs: {
+      t: "Next.js · API Routes",
+      b: "Reçoit le POST, vérifie la session, crée la ligne <code>quizzes</code> en état <i>pending</i>, puis appelle <code>generateQuizTask.trigger()</code>. Répond immédiatement avec le quizId — pas d'attente bloquante."
+    },
+    trigger: {
+      t: "Trigger.dev (Cloud)",
+      b: "Orchestrateur de tâches asynchrones. Persiste la run, gère la file, les <code>retries</code> (3× backoff exp.), les logs et la durée max (600s). Dispatche ensuite vers un worker disponible."
+    },
+    worker: {
+      t: "Worker Trigger",
+      b: "Exécute <code>generate-quiz.ts</code> dans un environnement isolé. Appelle le LLM, supprime les anciennes <code>questions</code>, insère questions+choix, puis met à jour le titre/thème du quiz."
+    },
+    llm: {
+      t: "LLM Provider",
+      b: "Reçoit le prompt utilisateur et les bornes min/max de questions, retourne un objet quiz structuré (titre, thème, questions, choix avec <code>is_correct</code>)."
+    },
+    supabase: {
+      t: "Supabase",
+      b: "Postgres + Auth + Realtime. Le worker écrit avec la <code>service_role key</code>; le navigateur reçoit les changements via WebSocket (canal Postgres Changes) sans repasser par Next.js."
+    }
+  };
+
+  const nodes = document.querySelectorAll('.node');
+  const title = document.getElementById('info-title');
+  const body = document.getElementById('info-body');
+
+  nodes.forEach(n => {
+    n.addEventListener('click', () => {
+      nodes.forEach(x => x.classList.remove('active'));
+      n.classList.add('active');
+      const i = INFO[n.dataset.id];
+      title.innerHTML = i.t;
+      body.innerHTML = i.b;
+    });
+  });
+
+  // --- Simulation ---
+  const log = document.getElementById('log');
+  const packet = document.getElementById('packet');
+  const edges = ['e1','e2','e3','e4','e5','e6','e7'].map(id => document.getElementById(id));
+
+  function logLine(text, kind='') {
+    const p = document.createElement('p');
+    p.className = 'ln ' + kind;
+    const time = new Date().toLocaleTimeString();
+    p.innerHTML = `<span class="t">[${time}]</span> ${text}`;
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function animatePath(edge, duration) {
+    return new Promise(resolve => {
+      const len = edge.getTotalLength();
+      packet.classList.add('run');
+      const start = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const pt = edge.getPointAtLength(t * len);
+        packet.setAttribute('cx', pt.x);
+        packet.setAttribute('cy', pt.y);
+        if (t < 1) requestAnimationFrame(tick);
+        else { packet.classList.remove('run'); resolve(); }
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  function activate(id) {
+    nodes.forEach(x => x.classList.remove('active'));
+    document.querySelector(`.node[data-id="${id}"]`)?.classList.add('active');
+  }
+
+  let running = false;
+  document.getElementById('run').addEventListener('click', async () => {
+    if (running) return;
+    running = true;
+    log.innerHTML = '';
+    logLine("Utilisateur soumet un prompt depuis le navigateur");
+    activate('browser');
+    await animatePath(edges[0], 700);
+
+    logLine("Next.js crée le quiz (status: pending) et appelle tasks.trigger()");
+    activate('nextjs');
+    await animatePath(edges[1], 700);
+
+    logLine("Trigger.dev enfile la run et dispatche au worker", 'ok');
+    activate('trigger');
+    await animatePath(edges[2], 700);
+
+    activate('worker');
+    logLine("Worker appelle generateQuizWithAI(prompt, min, max)");
+    await animatePath(edges[3], 800);
+
+    activate('llm');
+    logLine("LLM renvoie le quiz structuré (titre + N questions)", 'ok');
+    await new Promise(r => setTimeout(r, 400));
+
+    activate('worker');
+    logLine("Worker INSERT questions + choices via supabase-js");
+    await animatePath(edges[4], 900);
+
+    activate('supabase');
+    logLine("Supabase pousse les changements sur le canal Realtime", 'ok');
+    await animatePath(edges[5], 800);
+
+    activate('browser');
+    logLine("UI affiche les questions au fil de l'eau ✔", 'ok');
+    await animatePath(edges[6], 600);
+
+    logLine("Run terminée — quiz prêt à être joué", 'ok');
+    running = false;
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    log.innerHTML = '';
+    nodes.forEach(x => x.classList.remove('active'));
+    title.innerHTML = "Vue d'ensemble";
+    body.innerHTML = INFO_DEFAULT;
+  });
+
+  const INFO_DEFAULT = body.innerHTML;
+</script>
+</body>
+</html>

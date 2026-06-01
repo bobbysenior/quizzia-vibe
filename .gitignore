@@ -14,3 +14,4 @@ supabase/.temp
 .idea
 .env.old
 .env.dev
+.trigger/

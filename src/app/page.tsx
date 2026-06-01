@@ -101,8 +101,8 @@ export default async function Home() {
             Génération IA · Disponible maintenant
           </div>
           <h1 className="text-[clamp(48px,8.2vw,104px)] leading-[0.98] tracking-[-0.04em] font-semibold mb-6">
-            Des quiz, <br />
             <span className="bg-[linear-gradient(120deg,var(--color-ink)_30%,var(--color-accent)_50%,var(--color-ink)_70%)] bg-[length:200%_100%] bg-clip-text text-transparent animate-shine">
+              Des quiz, <br />
               générés en quelques secondes.
             </span>
           </h1>
