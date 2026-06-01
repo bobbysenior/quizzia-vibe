@@ -15,3 +15,6 @@ supabase/.temp
 .env.old
 .env.dev
 .trigger/
+
+# fichier d'env de dev (contient des secrets) — voir env.dev manquant ? cf .env.example
+env.dev
